@@ -1,11 +1,12 @@
-# Resume Compare
+# Hire Help
 
 An AI-powered hiring assistant that helps you analyze job descriptions, compare candidate resumes, generate interview preparation materials, and make informed hiring decisions.
 
 ## Features
 
-- **Job Description Analysis**: Upload and analyze job descriptions for clarity and completeness, with AI-powered improvement recommendations
+- **Job Description Analysis**: Upload job descriptions (PDF, Word, or paste text) with automatic job title extraction and AI-powered improvement recommendations
 - **Resume Comparison**: Upload multiple resumes (PDF, Word, or text) to compare candidates against job requirements
+- **Smart Name Extraction**: AI-powered extraction of candidate names and locations from resumes
 - **Candidate Rankings**: Get Best/Better/Good/Bad rankings based on JD match, with percentage scores and recommendations
 - **Interview Preparation**: Generate customized interview questions with context on why to ask and what to look for
 - **Post-Interview Analysis**: Paste interview notes for AI analysis and candidate evaluation
@@ -17,7 +18,7 @@ An AI-powered hiring assistant that helps you analyze job descriptions, compare 
 - **Frontend**: Next.js 14 (App Router), React, TypeScript
 - **Styling**: Tailwind CSS with Apple-inspired design
 - **State Management**: Zustand
-- **AI**: OpenAI GPT-4/GPT-4-turbo
+- **AI**: Azure OpenAI (GPT-4)
 - **File Processing**: pdf-parse (PDF), mammoth (Word)
 - **Export**: docx (Word documents)
 
@@ -25,15 +26,16 @@ An AI-powered hiring assistant that helps you analyze job descriptions, compare 
 
 ### Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
-- OpenAI API key
+- Azure OpenAI API access (API key, endpoint, and deployment name)
 
 ### Installation
 
 1. Clone the repository:
 ```bash
-cd Resume-Compare
+git clone https://github.com/YOUR_USERNAME/hire-help.git
+cd hire-help
 ```
 
 2. Install dependencies:
@@ -43,13 +45,15 @@ npm install
 
 3. Create your environment file:
 ```bash
-cp .env.example .env.local
+touch .env.local
 ```
 
-4. Add your OpenAI API key to `.env.local`:
+4. Add your Azure OpenAI credentials to `.env.local`:
 ```
-OPENAI_API_KEY=your-api-key-here
-OPENAI_MODEL=gpt-4-turbo
+AZURE_OPENAI_API_KEY=your-api-key-here
+AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
+AZURE_OPENAI_DEPLOYMENT=gpt-4.1
+AZURE_OPENAI_API_VERSION=2025-01-01-preview
 ```
 
 5. Start the development server:
@@ -59,20 +63,29 @@ npm run dev
 
 6. Open [http://localhost:3000](http://localhost:3000) in your browser.
 
+## Environment Variables
+
+| Variable | Description | Required |
+|----------|-------------|----------|
+| `AZURE_OPENAI_API_KEY` | Your Azure OpenAI API key | Yes |
+| `AZURE_OPENAI_ENDPOINT` | Your Azure OpenAI endpoint URL | Yes |
+| `AZURE_OPENAI_DEPLOYMENT` | Your model deployment name (e.g., gpt-4.1) | Yes |
+| `AZURE_OPENAI_API_VERSION` | API version (default: 2025-01-01-preview) | No |
+
 ## Usage
 
 ### 1. Upload Job Description
 
-- Paste your job description in the left panel
-- Click "Upload Job Description"
-- Optionally click "Recommend JD Updates" to get AI-powered suggestions for improving the job description
+- Drag and drop a PDF/Word file, or paste your job description text
+- Files are automatically processed and the job title is extracted
+- Click "Recommend JD Updates" to get AI-powered suggestions for improving the job description
 
 ### 2. Upload Resumes
 
 - After uploading a JD, you can upload candidate resumes
 - Supports PDF, Word (.docx), and text files
 - Multiple files can be uploaded at once
-- Candidates are automatically parsed and named
+- AI automatically extracts candidate names and locations
 
 ### 3. Review Analysis
 
@@ -102,7 +115,7 @@ After uploading resumes, the app generates:
 ## Project Structure
 
 ```
-resume-compare/
+hire-help/
 ├── app/
 │   ├── api/              # API routes
 │   ├── layout.tsx        # Root layout
@@ -117,7 +130,7 @@ resume-compare/
 │   ├── interview/        # Interview prep
 │   └── chat/             # Chat interface
 ├── lib/
-│   ├── openai.ts         # OpenAI client
+│   ├── openai.ts         # Azure OpenAI client
 │   ├── file-parser.ts    # PDF/DOCX parsing
 │   ├── prompts.ts        # AI prompts
 │   └── utils.ts          # Utilities
@@ -126,13 +139,6 @@ resume-compare/
 └── types/
     └── index.ts          # TypeScript types
 ```
-
-## Environment Variables
-
-| Variable | Description | Required |
-|----------|-------------|----------|
-| `OPENAI_API_KEY` | Your OpenAI API key | Yes |
-| `OPENAI_MODEL` | Model to use (default: gpt-4-turbo) | No |
 
 ## License
 
