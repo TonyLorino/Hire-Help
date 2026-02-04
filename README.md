@@ -2,16 +2,34 @@
 
 An AI-powered hiring assistant that helps you analyze job descriptions, compare candidate resumes, generate interview preparation materials, and make informed hiring decisions.
 
+See [CHANGELOG.md](CHANGELOG.md) for recent updates.
+
 ## Features
 
+### Core Analysis
 - **Job Description Analysis**: Upload job descriptions (PDF, Word, or paste text) with automatic job title extraction and AI-powered improvement recommendations
 - **Resume Comparison**: Upload multiple resumes (PDF, Word, or text) to compare candidates against job requirements
 - **Smart Name Extraction**: AI-powered extraction of candidate names and locations from resumes
 - **Candidate Rankings**: Get Best/Better/Good/Bad rankings based on JD match, with percentage scores and recommendations
+
+### Interview Tools
 - **Interview Preparation**: Generate customized interview questions with context on why to ask and what to look for
-- **Post-Interview Analysis**: Paste interview notes for AI analysis and candidate evaluation
-- **Document Export**: Export interview prep materials to PDF or Word format
-- **Chat Assistant**: Interactive AI assistant for questions about candidates, job descriptions, and hiring decisions
+- **Interview Notes**: Paste interview notes for each candidate and get AI-powered analysis combining notes with JD/resume data
+- **Recommendations**: View comprehensive candidate recommendations with strengths, concerns, and suggested next steps
+
+### Post-Interview
+- **Candidate Comparison**: Side-by-side comparison table with interview highlights and key concerns
+- **Hiring Manager Emails**: Generate email templates summarizing candidate performance
+- **Print & Export**: Print recommendations as PDF or copy formatted text for emails
+
+### AI Chat Assistant
+- **Streaming Responses**: Real-time AI responses with typing animation
+- **Markdown Rendering**: Properly formatted responses with headers, lists, tables, and code blocks
+- **Resizable Interface**: Drag to resize the chat area to your preference
+- **Contextual Answers**: Ask questions about candidates, job descriptions, and hiring decisions
+
+### Document Export
+- Export interview prep materials to PDF or Word format
 
 ## Tech Stack
 
@@ -105,11 +123,30 @@ After uploading resumes, the app generates:
   - Candidate-specific questions
 - Export to PDF or Word for use during interviews
 
-### 5. Post-Interview Analysis
+### 5. Interview Notes
 
-- Use the chat interface to paste interview notes
-- Get AI analysis combining notes + resume + JD
-- Receive recommendations on whether to advance candidates
+- Click the "Interview Notes" tab
+- Paste your notes from the interview into the candidate's card
+- Click "Send" to analyze the notes
+- AI generates a comprehensive summary combining notes with JD/resume analysis
+- Option to generate a hiring manager email template
+
+### 6. Recommendations
+
+- Click the "Recommendations" tab after analyzing interview notes
+- View recommendation cards for each candidate with:
+  - Interview synopsis
+  - Strengths & matches
+  - Concerns & gaps
+  - Suggested next steps
+- Use the comparison table to evaluate candidates side-by-side
+- Print individual recommendations as PDF or copy for emails
+
+### 7. Chat Assistant
+
+- Use the chat interface at the bottom for ad-hoc questions
+- Resize the chat area by dragging the handle
+- Ask about specific candidates, job requirements, or get hiring advice
 - Generate offer/rejection emails
 
 ## Project Structure
@@ -117,27 +154,35 @@ After uploading resumes, the app generates:
 ```
 hire-help/
 ├── app/
-│   ├── api/              # API routes
-│   ├── layout.tsx        # Root layout
-│   ├── page.tsx          # Main page
-│   └── globals.css       # Global styles
+│   ├── api/                    # API routes
+│   │   ├── analyze-jd/         # JD analysis
+│   │   ├── analyze-resumes/    # Resume analysis
+│   │   ├── analyze-interview-notes/  # Interview notes analysis
+│   │   ├── generate-hiring-email/    # Email generation
+│   │   ├── chat/               # Chat completions
+│   │   └── ...                 # Other endpoints
+│   ├── layout.tsx              # Root layout
+│   ├── page.tsx                # Main page with resizable chat
+│   └── globals.css             # Global styles
 ├── components/
-│   ├── ui/               # Reusable UI components
-│   ├── layout/           # Layout components
-│   ├── job-description/  # JD-related components
-│   ├── resumes/          # Resume upload/list
-│   ├── analysis/         # Analysis tables
-│   ├── interview/        # Interview prep
-│   └── chat/             # Chat interface
+│   ├── ui/                     # Reusable UI components
+│   ├── layout/                 # Layout components (Header, LeftPanel, RightPanel)
+│   ├── job-description/        # JD upload, preview, analysis
+│   ├── resumes/                # Resume upload/list
+│   ├── analysis/               # Analysis tables (Summary, JD Match, Comparison)
+│   ├── interview/              # Interview prep & notes
+│   ├── recommendations/        # Recommendations view
+│   └── chat/                   # Chat interface with streaming
 ├── lib/
-│   ├── openai.ts         # Azure OpenAI client
-│   ├── file-parser.ts    # PDF/DOCX parsing
-│   ├── prompts.ts        # AI prompts
-│   └── utils.ts          # Utilities
+│   ├── openai.ts               # Azure OpenAI client
+│   ├── file-parser.ts          # PDF/DOCX parsing
+│   ├── prompts.ts              # AI prompts
+│   ├── export.ts               # PDF/Word export
+│   └── utils.ts                # Utilities
 ├── store/
-│   └── app-store.ts      # Zustand store
+│   └── app-store.ts            # Zustand store
 └── types/
-    └── index.ts          # TypeScript types
+    └── index.ts                # TypeScript types
 ```
 
 ## License
