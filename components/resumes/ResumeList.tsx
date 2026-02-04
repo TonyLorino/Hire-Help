@@ -45,7 +45,7 @@ export function ResumeList() {
   };
 
   return (
-    <div className="space-y-3">
+    <div className="space-y-3 w-full min-w-0">
       <div className="flex items-center justify-between">
         <span className="text-sm text-gray-500">
           {candidates.length} candidate{candidates.length !== 1 ? "s" : ""}
@@ -77,7 +77,7 @@ export function ResumeList() {
       </div>
 
       {candidates.map((candidate) => (
-        <Card key={candidate.id} className="hover-lift">
+        <Card key={candidate.id} className="hover-lift w-full min-w-0 overflow-hidden">
           <CardContent className="p-3">
             <div className="flex items-start justify-between gap-3">
               <div className="flex items-start gap-3 min-w-0">

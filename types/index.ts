@@ -67,6 +67,32 @@ export interface PostInterviewAnalysis {
   decisionRationale: string;
 }
 
+export interface InterviewNotes {
+  candidateId: string;
+  notes: string;
+  analyzedAt?: Date;
+}
+
+export interface InterviewNotesAnalysis {
+  candidateId: string;
+  candidateName: string;
+  synopsis: string; // 2-3 paragraph summary combining all data
+  interviewMatches: string[]; // Matches found during interview
+  interviewGaps: string[]; // Gaps identified during interview
+  resumeMatches: string[]; // Matches from resume
+  resumeGaps: string[]; // Gaps from resume
+  overallAssessment: string;
+  recommendation: InterviewDecision;
+  nextSteps: string[];
+}
+
+export interface HiringManagerEmail {
+  candidateId: string;
+  subject: string;
+  body: string;
+  generatedAt: Date;
+}
+
 export interface CandidateFinalSummary {
   paragraph: string; // 3-5 sentences
   bulletPoints: string[]; // 3-8 bullets
@@ -104,6 +130,8 @@ export interface JobDescriptionInfo {
   department: string | null;
 }
 
+export type ActiveTab = "summary" | "jd-match" | "comparison" | "interview" | "notes" | "recommendations";
+
 export interface AppState {
   // Job Description
   jobDescription: string;
@@ -118,6 +146,11 @@ export interface AppState {
   interviewPreps: Map<string, InterviewPrep>;
   postInterviewAnalyses: Map<string, PostInterviewAnalysis>;
   
+  // Interview Notes
+  interviewNotes: Map<string, InterviewNotes>;
+  interviewNotesAnalyses: Map<string, InterviewNotesAnalysis>;
+  hiringManagerEmails: Map<string, HiringManagerEmail>;
+  
   // Chat
   chatMessages: ChatMessage[];
   selectedCandidateId: string | null;
@@ -125,5 +158,5 @@ export interface AppState {
   // UI State
   isLoading: boolean;
   loadingMessage: string;
-  activeTab: "summary" | "jd-match" | "comparison" | "interview";
+  activeTab: ActiveTab;
 }

@@ -1,12 +1,16 @@
 import { create } from "zustand";
 import type {
   AppState,
+  ActiveTab,
   Candidate,
   JDAnalysis,
   JobDescriptionInfo,
   AnalysisResults,
   InterviewPrep,
   PostInterviewAnalysis,
+  InterviewNotes,
+  InterviewNotesAnalysis,
+  HiringManagerEmail,
   ChatMessage,
 } from "@/types";
 
@@ -27,14 +31,20 @@ interface AppStore extends AppState {
   setInterviewPrep: (candidateId: string, prep: InterviewPrep) => void;
   setPostInterviewAnalysis: (candidateId: string, analysis: PostInterviewAnalysis) => void;
 
+  // Interview Notes Actions
+  setInterviewNotes: (candidateId: string, notes: string) => void;
+  setInterviewNotesAnalysis: (candidateId: string, analysis: InterviewNotesAnalysis) => void;
+  setHiringManagerEmail: (candidateId: string, email: HiringManagerEmail) => void;
+
   // Chat Actions
   addChatMessage: (message: ChatMessage) => void;
+  updateChatMessage: (id: string, content: string) => void;
   clearChat: () => void;
   setSelectedCandidate: (id: string | null) => void;
 
   // UI Actions
   setLoading: (loading: boolean, message?: string) => void;
-  setActiveTab: (tab: AppState["activeTab"]) => void;
+  setActiveTab: (tab: ActiveTab) => void;
 
   // Reset
   resetAll: () => void;
@@ -48,6 +58,9 @@ const initialState: AppState = {
   analysisResults: null,
   interviewPreps: new Map(),
   postInterviewAnalyses: new Map(),
+  interviewNotes: new Map(),
+  interviewNotesAnalyses: new Map(),
+  hiringManagerEmails: new Map(),
   chatMessages: [],
   selectedCandidateId: null,
   isLoading: false,
@@ -90,6 +103,15 @@ export const useAppStore = create<AppStore>((set, get) => ({
       postInterviewAnalyses: new Map(
         Array.from(state.postInterviewAnalyses.entries()).filter(([key]) => key !== id)
       ),
+      interviewNotes: new Map(
+        Array.from(state.interviewNotes.entries()).filter(([key]) => key !== id)
+      ),
+      interviewNotesAnalyses: new Map(
+        Array.from(state.interviewNotesAnalyses.entries()).filter(([key]) => key !== id)
+      ),
+      hiringManagerEmails: new Map(
+        Array.from(state.hiringManagerEmails.entries()).filter(([key]) => key !== id)
+      ),
     })),
 
   clearCandidates: () =>
@@ -98,6 +120,9 @@ export const useAppStore = create<AppStore>((set, get) => ({
       analysisResults: null,
       interviewPreps: new Map(),
       postInterviewAnalyses: new Map(),
+      interviewNotes: new Map(),
+      interviewNotesAnalyses: new Map(),
+      hiringManagerEmails: new Map(),
       selectedCandidateId: null,
     }),
 
@@ -117,10 +142,47 @@ export const useAppStore = create<AppStore>((set, get) => ({
       ),
     })),
 
+  // Interview Notes Actions
+  setInterviewNotes: (candidateId, notes) =>
+    set((state) => ({
+      interviewNotes: new Map(state.interviewNotes).set(candidateId, {
+        candidateId,
+        notes,
+        analyzedAt: undefined,
+      }),
+    })),
+
+  setInterviewNotesAnalysis: (candidateId, analysis) =>
+    set((state) => ({
+      interviewNotesAnalyses: new Map(state.interviewNotesAnalyses).set(
+        candidateId,
+        analysis
+      ),
+      interviewNotes: new Map(state.interviewNotes).set(candidateId, {
+        ...state.interviewNotes.get(candidateId)!,
+        analyzedAt: new Date(),
+      }),
+    })),
+
+  setHiringManagerEmail: (candidateId, email) =>
+    set((state) => ({
+      hiringManagerEmails: new Map(state.hiringManagerEmails).set(
+        candidateId,
+        email
+      ),
+    })),
+
   // Chat Actions
   addChatMessage: (message) =>
     set((state) => ({
       chatMessages: [...state.chatMessages, message],
+    })),
+
+  updateChatMessage: (id, content) =>
+    set((state) => ({
+      chatMessages: state.chatMessages.map((msg) =>
+        msg.id === id ? { ...msg, content } : msg
+      ),
     })),
 
   clearChat: () => set({ chatMessages: [] }),

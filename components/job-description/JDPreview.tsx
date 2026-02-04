@@ -43,11 +43,11 @@ export function JDPreview() {
     : truncateText(jobDescription, 300);
 
   return (
-    <Card>
-      <CardHeader className="pb-3">
-        <div className="flex items-center justify-between">
-          <div className="flex-1 min-w-0">
-            <CardTitle className="text-base truncate">
+    <Card className="w-full max-w-full min-w-0 overflow-hidden box-border">
+      <CardHeader className="pb-3 overflow-hidden">
+        <div className="flex items-center justify-between gap-2 overflow-hidden">
+          <div className="flex-1 min-w-0 overflow-hidden">
+            <CardTitle className="text-base truncate max-w-full">
               {jobInfo?.jobTitle || "Job Description"}
             </CardTitle>
             {(jobInfo?.company || jobInfo?.location) && (
@@ -77,10 +77,10 @@ export function JDPreview() {
           </Button>
         </div>
       </CardHeader>
-      <CardContent className="space-y-4">
+      <CardContent className="space-y-4 overflow-hidden max-w-full">
         {/* JD Text Preview */}
-        <div className="relative">
-          <p className="text-sm text-gray-600 whitespace-pre-wrap">
+        <div className="relative overflow-hidden max-w-full">
+          <p className="text-sm text-gray-600 whitespace-pre-wrap break-words overflow-hidden max-w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
             {displayText}
           </p>
           {jobDescription.length > 300 && (

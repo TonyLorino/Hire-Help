@@ -1,0 +1,588 @@
+"use client";
+
+import React, { useRef, useCallback } from "react";
+import { User, MapPin, CheckCircle2, XCircle, ArrowRight, FileText, Printer, Copy, Check } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { useAppStore } from "@/store/app-store";
+import type { InterviewDecision, RecommendationLevel, InterviewNotesAnalysis, Candidate } from "@/types";
+
+const decisionLabels: Record<InterviewDecision, string> = {
+  advance: "Advance",
+  hold: "Hold",
+  reject: "Reject",
+};
+
+const decisionColors: Record<InterviewDecision, string> = {
+  advance: "bg-success-light text-success border-success/20",
+  hold: "bg-warning-light text-warning border-warning/20",
+  reject: "bg-danger-light text-danger border-danger/20",
+};
+
+// Helper to render inline markdown (bold/italic) in text
+function renderInlineMarkdown(text: string): React.ReactNode {
+  if (!text) return text;
+  
+  // Split on **bold** and *italic* patterns
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
+export function RecommendationsView() {
+  const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+
+  const candidates = useAppStore((state) => state.candidates);
+  const analysisResults = useAppStore((state) => state.analysisResults);
+  const interviewNotesAnalyses = useAppStore((state) => state.interviewNotesAnalyses);
+  const interviewNotes = useAppStore((state) => state.interviewNotes);
+  const setActiveTab = useAppStore((state) => state.setActiveTab);
+
+  // Generate plain text format for copying
+  const generatePlainText = useCallback((candidate: Candidate, analysis: InterviewNotesAnalysis): string => {
+    const comparison = analysisResults?.comparisons?.find(
+      (c) => c.candidateId === candidate.id || c.name === candidate.name
+    );
+    
+    // Remove markdown formatting from text
+    const stripMarkdown = (text: string): string => {
+      return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
+    };
+
+    let text = `CANDIDATE RECOMMENDATION: ${candidate.name}\n`;
+    text += `Location: ${candidate.location}\n`;
+    text += `Decision: ${decisionLabels[analysis.recommendation].toUpperCase()}\n`;
+    if (comparison) {
+      text += `JD Match: ${comparison.jdMatchPercent}%\n`;
+    }
+    text += `\n`;
+
+    text += `INTERVIEW SYNOPSIS\n`;
+    text += `${analysis.synopsis || "No synopsis available."}\n\n`;
+
+    const strengths = [
+      ...(analysis.interviewMatches || []).slice(0, 3),
+      ...(analysis.resumeMatches || []).slice(0, 2),
+    ];
+    if (strengths.length > 0) {
+      text += `STRENGTHS & MATCHES\n`;
+      strengths.forEach((item) => {
+        text += `• ${stripMarkdown(item)}\n`;
+      });
+      text += `\n`;
+    }
+
+    const concerns = [
+      ...(analysis.interviewGaps || []).slice(0, 3),
+      ...(analysis.resumeGaps || []).slice(0, 2),
+    ];
+    if (concerns.length > 0) {
+      text += `CONCERNS & GAPS\n`;
+      concerns.forEach((item) => {
+        text += `• ${stripMarkdown(item)}\n`;
+      });
+      text += `\n`;
+    }
+
+    if (analysis.nextSteps && analysis.nextSteps.length > 0) {
+      text += `SUGGESTED NEXT STEPS\n`;
+      analysis.nextSteps.forEach((step) => {
+        text += `→ ${stripMarkdown(step)}\n`;
+      });
+    }
+
+    return text;
+  }, [analysisResults]);
+
+  // Handle copy to clipboard
+  const handleCopy = useCallback(async (candidateId: string, candidate: Candidate, analysis: InterviewNotesAnalysis) => {
+    const text = generatePlainText(candidate, analysis);
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedId(candidateId);
+      setTimeout(() => setCopiedId(null), 2000);
+    } catch (err) {
+      console.error("Failed to copy text:", err);
+    }
+  }, [generatePlainText]);
+
+  // Handle print to PDF
+  const handlePrint = useCallback((candidateId: string, candidate: Candidate, analysis: InterviewNotesAnalysis) => {
+    const comparison = analysisResults?.comparisons?.find(
+      (c) => c.candidateId === candidate.id || c.name === candidate.name
+    );
+    
+    // Remove markdown formatting from text
+    const stripMarkdown = (text: string): string => {
+      return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    };
+
+    const strengths = [
+      ...(analysis.interviewMatches || []).slice(0, 3),
+      ...(analysis.resumeMatches || []).slice(0, 2),
+    ];
+    const concerns = [
+      ...(analysis.interviewGaps || []).slice(0, 3),
+      ...(analysis.resumeGaps || []).slice(0, 2),
+    ];
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Recommendation - ${candidate.name}</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 40px; max-width: 800px; margin: 0 auto; color: #333; }
+          h1 { font-size: 24px; margin-bottom: 4px; color: #111; }
+          .subtitle { color: #666; margin-bottom: 20px; }
+          .badge { display: inline-block; padding: 4px 12px; border-radius: 20px; font-weight: 600; font-size: 14px; }
+          .badge-advance { background: #dcfce7; color: #166534; }
+          .badge-hold { background: #fef9c3; color: #854d0e; }
+          .badge-reject { background: #fee2e2; color: #991b1b; }
+          .section { margin: 24px 0; }
+          .section-title { font-size: 14px; font-weight: 600; color: #666; text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 8px; }
+          .synopsis { font-size: 14px; line-height: 1.6; color: #444; }
+          .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+          .box { padding: 16px; border-radius: 8px; }
+          .box-green { background: #f0fdf4; }
+          .box-red { background: #fef2f2; }
+          .box-title { font-size: 13px; font-weight: 600; margin-bottom: 8px; }
+          .box-title-green { color: #166534; }
+          .box-title-red { color: #991b1b; }
+          ul { margin: 0; padding-left: 16px; }
+          li { font-size: 13px; line-height: 1.5; color: #444; margin-bottom: 4px; }
+          .next-steps { background: #f9fafb; padding: 16px; border-radius: 8px; }
+          .next-step { display: flex; align-items: flex-start; gap: 8px; font-size: 13px; color: #444; margin-bottom: 4px; }
+          .arrow { color: #3b82f6; }
+          @media print { body { padding: 20px; } }
+        </style>
+      </head>
+      <body>
+        <h1>${candidate.name}</h1>
+        <div class="subtitle">
+          ${candidate.location}${comparison ? ` • JD Match: ${comparison.jdMatchPercent}%` : ''}
+        </div>
+        <span class="badge badge-${analysis.recommendation}">${decisionLabels[analysis.recommendation]}</span>
+        
+        <div class="section">
+          <div class="section-title">Interview Synopsis</div>
+          <div class="synopsis">${analysis.synopsis || "No synopsis available."}</div>
+        </div>
+        
+        <div class="grid">
+          <div class="box box-green">
+            <div class="box-title box-title-green">Strengths & Matches</div>
+            <ul>
+              ${strengths.map(item => `<li>${stripMarkdown(item)}</li>`).join('')}
+            </ul>
+          </div>
+          <div class="box box-red">
+            <div class="box-title box-title-red">Concerns & Gaps</div>
+            <ul>
+              ${concerns.map(item => `<li>${stripMarkdown(item)}</li>`).join('')}
+            </ul>
+          </div>
+        </div>
+        
+        ${analysis.nextSteps && analysis.nextSteps.length > 0 ? `
+          <div class="section">
+            <div class="next-steps">
+              <div class="section-title">Suggested Next Steps</div>
+              ${analysis.nextSteps.map(step => `
+                <div class="next-step">
+                  <span class="arrow">→</span>
+                  <span>${stripMarkdown(step)}</span>
+                </div>
+              `).join('')}
+            </div>
+          </div>
+        ` : ''}
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  }, [analysisResults]);
+
+  // Check if we have any interview notes analyzed
+  const hasAnalyzedNotes = interviewNotesAnalyses.size > 0;
+
+  if (candidates.length === 0) {
+    return (
+      <div className="text-center py-12 text-gray-500">
+        Upload candidates to view recommendations
+      </div>
+    );
+  }
+
+  if (!hasAnalyzedNotes) {
+    return (
+      <div className="flex flex-col items-center justify-center py-12 text-center">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-4">
+          <FileText className="h-8 w-8" />
+        </div>
+        <h4 className="font-medium text-gray-900 mb-2">
+          No Interview Notes Analyzed Yet
+        </h4>
+        <p className="text-sm text-gray-500 max-w-md mb-6">
+          Add interview notes for candidates and analyze them to see comprehensive recommendations.
+        </p>
+        <Button onClick={() => setActiveTab("notes")}>
+          <ArrowRight className="h-4 w-4 mr-2" />
+          Go to Interview Notes
+        </Button>
+      </div>
+    );
+  }
+
+  // Get candidates with analyzed notes
+  const analyzedCandidates = candidates.filter((c) =>
+    interviewNotesAnalyses.has(c.id)
+  );
+
+  // Sort by recommendation (advance > hold > reject)
+  const sortedCandidates = [...analyzedCandidates].sort((a, b) => {
+    const analysisA = interviewNotesAnalyses.get(a.id);
+    const analysisB = interviewNotesAnalyses.get(b.id);
+    const order = { advance: 0, hold: 1, reject: 2 };
+    return (order[analysisA?.recommendation || "hold"] || 1) - (order[analysisB?.recommendation || "hold"] || 1);
+  });
+
+  return (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900 mb-1">
+          Candidate Recommendations
+        </h3>
+        <p className="text-sm text-gray-500">
+          Comprehensive analysis based on resumes, JD matching, and interview notes
+        </p>
+      </div>
+
+      {/* Recommendation Cards */}
+      <div className="space-y-4">
+        {sortedCandidates.map((candidate) => {
+          const analysis = interviewNotesAnalyses.get(candidate.id);
+          const jdMatch = analysisResults?.jdMatches?.find(
+            (m) => m.candidateId === candidate.id || m.name === candidate.name
+          );
+          const comparison = analysisResults?.comparisons?.find(
+            (c) => c.candidateId === candidate.id || c.name === candidate.name
+          );
+
+          if (!analysis) return null;
+
+          return (
+            <Card key={candidate.id} className="animate-fade-in overflow-hidden">
+              {/* Recommendation Header */}
+              <div
+                className={`px-5 py-3 border-b ${decisionColors[analysis.recommendation]}`}
+              >
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50">
+                      <User className="h-5 w-5" />
+                    </div>
+                    <div>
+                      <h4 className="font-semibold">{candidate.name}</h4>
+                      <div className="flex items-center gap-1 text-sm opacity-80">
+                        <MapPin className="h-3.5 w-3.5" />
+                        {candidate.location}
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <div className="flex gap-1">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
+                        onClick={() => handlePrint(candidate.id, candidate, analysis)}
+                        title="Print as PDF"
+                      >
+                        <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
+                        onClick={() => handleCopy(candidate.id, candidate, analysis)}
+                        title="Copy to clipboard"
+                      >
+                        {copiedId === candidate.id ? (
+                          <Check className="h-4 w-4 text-success" />
+                        ) : (
+                          <Copy className="h-4 w-4" />
+                        )}
+                      </Button>
+                    </div>
+                    <div className="text-right">
+                      <Badge
+                        variant={analysis.recommendation as RecommendationLevel}
+                        className="text-sm"
+                      >
+                        {decisionLabels[analysis.recommendation]}
+                      </Badge>
+                      {comparison && (
+                        <div className="text-xs mt-1 opacity-80">
+                          JD Match: {comparison.jdMatchPercent}%
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <CardContent className="p-5">
+                {/* Synopsis */}
+                <div className="mb-4">
+                  <h5 className="text-sm font-medium text-gray-700 mb-2">
+                    Interview Synopsis
+                  </h5>
+                  <p className="text-sm text-gray-600 leading-relaxed">
+                    {analysis.synopsis || "No synopsis available."}
+                  </p>
+                </div>
+
+                {/* Matches and Gaps Grid */}
+                <div className="grid gap-4 md:grid-cols-2 mb-4">
+                  {/* Strengths */}
+                  <div className="p-4 bg-success-light/50 rounded-apple">
+                    <div className="flex items-center gap-2 mb-3">
+                      <CheckCircle2 className="h-4 w-4 text-success" />
+                      <span className="text-sm font-medium text-success">
+                        Strengths & Matches
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {[
+                        ...(analysis.interviewMatches || []).slice(0, 3),
+                        ...(analysis.resumeMatches || []).slice(0, 2),
+                      ].map((item, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-xs text-gray-600"
+                        >
+                          <span className="text-success mt-0.5">•</span>
+                          <span>{renderInlineMarkdown(item)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* Concerns */}
+                  <div className="p-4 bg-danger-light/50 rounded-apple">
+                    <div className="flex items-center gap-2 mb-3">
+                      <XCircle className="h-4 w-4 text-danger" />
+                      <span className="text-sm font-medium text-danger">
+                        Concerns & Gaps
+                      </span>
+                    </div>
+                    <ul className="space-y-1.5">
+                      {[
+                        ...(analysis.interviewGaps || []).slice(0, 3),
+                        ...(analysis.resumeGaps || []).slice(0, 2),
+                      ].map((item, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-xs text-gray-600"
+                        >
+                          <span className="text-danger mt-0.5">•</span>
+                          <span>{renderInlineMarkdown(item)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                </div>
+
+                {/* Next Steps */}
+                {analysis.nextSteps && analysis.nextSteps.length > 0 && (
+                  <div className="p-3 bg-gray-50 rounded-apple">
+                    <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                      Suggested Next Steps
+                    </h5>
+                    <ul className="space-y-1">
+                      {analysis.nextSteps.map((step, i) => (
+                        <li
+                          key={i}
+                          className="flex items-start gap-2 text-xs text-gray-600"
+                        >
+                          <ArrowRight className="h-3 w-3 mt-0.5 text-primary" />
+                          <span>{renderInlineMarkdown(step)}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })}
+      </div>
+
+      {/* Comparison Table */}
+      {sortedCandidates.length > 1 && (
+        <div className="space-y-4">
+          <h4 className="text-base font-semibold text-gray-900">
+            Candidate Comparison
+          </h4>
+
+          <Card className="overflow-hidden">
+            <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto">
+              <table className="w-full">
+                <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
+                  <tr className="border-b border-gray-200">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Candidate
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      JD Match
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Interview Highlights
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Key Concerns
+                    </th>
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Recommendation
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {sortedCandidates.map((candidate) => {
+                    const analysis = interviewNotesAnalyses.get(candidate.id);
+                    const comparison = analysisResults?.comparisons?.find(
+                      (c) => c.candidateId === candidate.id || c.name === candidate.name
+                    );
+
+                    if (!analysis) return null;
+
+                    return (
+                      <tr
+                        key={candidate.id}
+                        className="hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="px-4 py-4">
+                          <div>
+                            <span className="font-medium text-gray-900">
+                              {candidate.name}
+                            </span>
+                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                              <MapPin className="h-3 w-3" />
+                              {candidate.location}
+                            </div>
+                          </div>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          {comparison ? (
+                            <div className="inline-flex items-center justify-center">
+                              <div className="relative w-10 h-10">
+                                <svg className="w-10 h-10 transform -rotate-90">
+                                  <circle
+                                    cx="20"
+                                    cy="20"
+                                    r="16"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    fill="none"
+                                    className="text-gray-200"
+                                  />
+                                  <circle
+                                    cx="20"
+                                    cy="20"
+                                    r="16"
+                                    stroke="currentColor"
+                                    strokeWidth="3"
+                                    fill="none"
+                                    strokeDasharray={`${comparison.jdMatchPercent * 1.005} 100.5`}
+                                    className="text-primary"
+                                  />
+                                </svg>
+                                <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                                  {comparison.jdMatchPercent}%
+                                </span>
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-400">N/A</span>
+                          )}
+                        </td>
+                        <td className="px-4 py-4">
+                          <ul className="space-y-1">
+                            {analysis.interviewMatches?.slice(0, 2).map((item, i) => (
+                              <li
+                                key={i}
+                                className="flex items-start gap-1 text-xs text-gray-600"
+                              >
+                                <CheckCircle2 className="h-3 w-3 mt-0.5 text-success flex-shrink-0" />
+                                <span className="line-clamp-1">{renderInlineMarkdown(item)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                        <td className="px-4 py-4">
+                          <ul className="space-y-1">
+                            {analysis.interviewGaps?.slice(0, 2).map((item, i) => (
+                              <li
+                                key={i}
+                                className="flex items-start gap-1 text-xs text-gray-600"
+                              >
+                                <XCircle className="h-3 w-3 mt-0.5 text-danger flex-shrink-0" />
+                                <span className="line-clamp-1">{renderInlineMarkdown(item)}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        </td>
+                        <td className="px-4 py-4 text-center">
+                          <Badge
+                            variant={analysis.recommendation as RecommendationLevel}
+                          >
+                            {decisionLabels[analysis.recommendation]}
+                          </Badge>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </Card>
+        </div>
+      )}
+
+      {/* Candidates without analysis */}
+      {candidates.length > analyzedCandidates.length && (
+        <div className="p-4 bg-gray-50 rounded-apple">
+          <p className="text-sm text-gray-500">
+            {candidates.length - analyzedCandidates.length} candidate(s) have not been analyzed yet.{" "}
+            <button
+              onClick={() => setActiveTab("notes")}
+              className="text-primary hover:underline"
+            >
+              Add interview notes
+            </button>{" "}
+            to include them in recommendations.
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}

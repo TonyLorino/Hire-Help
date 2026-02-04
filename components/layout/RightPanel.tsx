@@ -1,14 +1,16 @@
 "use client";
 
-import { ScrollArea } from "@/components/ui/scroll-area";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CandidateSummary } from "@/components/analysis/CandidateSummary";
 import { JDMatchTable } from "@/components/analysis/JDMatchTable";
 import { CandidateCompareTable } from "@/components/analysis/CandidateCompareTable";
 import { InterviewPrepView } from "@/components/interview/InterviewPrepView";
+import { InterviewNotesView } from "@/components/interview/InterviewNotesView";
+import { RecommendationsView } from "@/components/recommendations/RecommendationsView";
 import { JDAnalysisCard } from "@/components/job-description/JDAnalysisCard";
 import { EmptyState } from "@/components/layout/EmptyState";
 import { useAppStore } from "@/store/app-store";
+import type { ActiveTab } from "@/types";
 
 export function RightPanel() {
   const jobDescription = useAppStore((state) => state.jobDescription);
@@ -34,7 +36,7 @@ export function RightPanel() {
   // Show JD analysis if no candidates yet
   if (candidates.length === 0) {
     return (
-      <ScrollArea className="h-full">
+      <div className="h-full overflow-y-auto">
         <div className="p-6">
           {jdAnalysis ? (
             <JDAnalysisCard />
@@ -46,25 +48,29 @@ export function RightPanel() {
             />
           )}
         </div>
-      </ScrollArea>
+      </div>
     );
   }
 
   // Show analysis tabs if we have candidates
   return (
-    <div className="flex h-full flex-col bg-gray-50/50">
-      <div className="border-b border-gray-200 bg-white px-6 py-4">
-        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as typeof activeTab)}>
-          <TabsList className="w-full justify-start">
+    <div className="flex h-full flex-col bg-gray-50/50 overflow-hidden">
+      {/* Tab bar - fixed, never shrinks or gets covered */}
+      <div className="flex-shrink-0 border-b border-gray-200 bg-white px-6 py-4 overflow-x-auto z-20">
+        <Tabs value={activeTab} onValueChange={(v) => setActiveTab(v as ActiveTab)}>
+          <TabsList className="w-full justify-start min-w-max">
             <TabsTrigger value="summary">Summary</TabsTrigger>
             <TabsTrigger value="jd-match">JD Match</TabsTrigger>
             <TabsTrigger value="comparison">Comparison</TabsTrigger>
             <TabsTrigger value="interview">Interview Prep</TabsTrigger>
+            <TabsTrigger value="notes">Interview Notes</TabsTrigger>
+            <TabsTrigger value="recommendations">Recommendations</TabsTrigger>
           </TabsList>
         </Tabs>
       </div>
 
-      <ScrollArea className="flex-1">
+      {/* Content area - scrollable */}
+      <div className="flex-1 overflow-y-auto overflow-x-hidden min-h-0">
         <div className="p-6">
           {activeTab === "summary" && (
             analysisResults ? (
@@ -100,8 +106,10 @@ export function RightPanel() {
             )
           )}
           {activeTab === "interview" && <InterviewPrepView />}
+          {activeTab === "notes" && <InterviewNotesView />}
+          {activeTab === "recommendations" && <RecommendationsView />}
         </div>
-      </ScrollArea>
+      </div>
     </div>
   );
 }
