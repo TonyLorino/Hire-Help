@@ -1,6 +1,7 @@
 "use client";
 
-import { FileText, RotateCcw, Briefcase } from "lucide-react";
+import Image from "next/image";
+import { RotateCcw, Briefcase } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/app-store";
 
@@ -15,9 +16,13 @@ export function Header() {
         <div className="flex items-center justify-between">
           {/* Logo and Title */}
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-apple bg-primary text-white shadow-apple-sm">
-              <FileText className="h-5 w-5" />
-            </div>
+            <Image
+              src="/logo.png"
+              alt="Hire Help"
+              width={40}
+              height={40}
+              className="rounded-apple"
+            />
             <div>
               <h1 className="text-lg font-semibold text-gray-900">
                 Hire Help
