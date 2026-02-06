@@ -1,80 +1,108 @@
-import { AzureOpenAI } from "openai";
-import type OpenAI from "openai";
+import OpenAI from "openai";
 
 // Lazy initialization to avoid build-time errors
-let azureClient: AzureOpenAI | null = null;
+let client: OpenAI | null = null;
 
-function getAzureOpenAIClient(): AzureOpenAI {
-  if (!azureClient) {
+function getOpenAIClient(): OpenAI {
+  if (!client) {
     const apiKey = process.env.AZURE_OPENAI_API_KEY;
-    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2025-01-01-preview";
+    const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME;
 
-    if (!apiKey || !endpoint) {
+    if (!apiKey || !resourceName) {
       throw new Error(
-        "Azure OpenAI configuration is missing. Please set AZURE_OPENAI_API_KEY and AZURE_OPENAI_ENDPOINT in your .env.local file."
+        "Azure OpenAI configuration is missing. Please set AZURE_OPENAI_API_KEY and AZURE_OPENAI_RESOURCE_NAME in your .env.local file."
       );
     }
 
-    azureClient = new AzureOpenAI({
+    client = new OpenAI({
       apiKey,
-      endpoint,
-      apiVersion,
+      baseURL: `https://${resourceName}.openai.azure.com/openai/v1/`,
     });
   }
-  return azureClient;
+  return client;
 }
 
-export const DEPLOYMENT = process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-4.1";
+export const DEPLOYMENT = process.env.AZURE_OPENAI_DEPLOYMENT || "gpt-5.2";
 
 export async function chatCompletion(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  messages: { role: string; content: string }[],
   options?: {
     temperature?: number;
     maxTokens?: number;
     responseFormat?: "text" | "json";
   }
 ): Promise<string> {
-  const client = getAzureOpenAIClient();
-  const response = await client.chat.completions.create({
+  const openaiClient = getOpenAIClient();
+  
+  // Convert messages to Responses API input format
+  let input = messages.map(m => ({
+    role: m.role as "system" | "user" | "assistant",
+    content: m.content,
+  }));
+
+  // If JSON format is requested, add instruction to system message
+  if (options?.responseFormat === "json") {
+    // Find system message and append JSON instruction
+    const systemIndex = input.findIndex(m => m.role === "system");
+    if (systemIndex >= 0) {
+      input[systemIndex] = {
+        ...input[systemIndex],
+        content: input[systemIndex].content + "\n\nIMPORTANT: You must respond with valid JSON only. No markdown, no explanation, just the JSON object.",
+      };
+    } else {
+      // Add system message if none exists
+      input = [
+        { role: "system" as const, content: "You must respond with valid JSON only. No markdown, no explanation, just the JSON object." },
+        ...input,
+      ];
+    }
+  }
+
+  const response = await (openaiClient as any).responses.create({
     model: DEPLOYMENT,
-    messages,
+    input,
     temperature: options?.temperature ?? 0.7,
-    max_tokens: options?.maxTokens ?? 4096,
-    response_format: options?.responseFormat === "json" 
-      ? { type: "json_object" } 
-      : undefined,
+    max_output_tokens: options?.maxTokens ?? 4096,
   });
 
-  return response.choices[0]?.message?.content || "";
+  return response.output_text || "";
 }
 
 export async function streamChatCompletion(
-  messages: OpenAI.Chat.ChatCompletionMessageParam[],
+  messages: { role: string; content: string }[],
   onChunk: (chunk: string) => void,
   options?: {
     temperature?: number;
     maxTokens?: number;
   }
 ): Promise<string> {
-  const client = getAzureOpenAIClient();
-  const stream = await client.chat.completions.create({
+  const openaiClient = getOpenAIClient();
+  
+  // Convert messages to Responses API input format
+  const input = messages.map(m => ({
+    role: m.role as "system" | "user" | "assistant",
+    content: m.content,
+  }));
+
+  const stream = await (openaiClient as any).responses.create({
     model: DEPLOYMENT,
-    messages,
+    input,
     temperature: options?.temperature ?? 0.7,
-    max_tokens: options?.maxTokens ?? 4096,
+    max_output_tokens: options?.maxTokens ?? 4096,
     stream: true,
   });
 
   let fullContent = "";
 
-  for await (const chunk of stream) {
-    const content = chunk.choices[0]?.delta?.content || "";
-    fullContent += content;
-    onChunk(content);
+  for await (const event of stream) {
+    if (event.type === 'response.output_text.delta') {
+      const content = event.delta || "";
+      fullContent += content;
+      onChunk(content);
+    }
   }
 
   return fullContent;
 }
 
-export default getAzureOpenAIClient;
+export default getOpenAIClient;

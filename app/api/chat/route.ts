@@ -1,29 +1,27 @@
 import { NextRequest, NextResponse } from "next/server";
 import { chatCompletion } from "@/lib/openai";
 import { DEPLOYMENT } from "@/lib/openai";
-import { AzureOpenAI } from "openai";
+import OpenAI from "openai";
 import type { ChatMessage } from "@/types";
 
 // Lazy initialization for streaming client
-let azureClient: AzureOpenAI | null = null;
+let client: OpenAI | null = null;
 
-function getAzureOpenAIClient(): AzureOpenAI {
-  if (!azureClient) {
+function getOpenAIClient(): OpenAI {
+  if (!client) {
     const apiKey = process.env.AZURE_OPENAI_API_KEY;
-    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2025-01-01-preview";
+    const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME;
 
-    if (!apiKey || !endpoint) {
+    if (!apiKey || !resourceName) {
       throw new Error("Azure OpenAI configuration is missing.");
     }
 
-    azureClient = new AzureOpenAI({
+    client = new OpenAI({
       apiKey,
-      endpoint,
-      apiVersion,
+      baseURL: `https://${resourceName}.openai.azure.com/openai/v1/`,
     });
   }
-  return azureClient;
+  return client;
 }
 
 function buildSystemContext(context: any): string {
@@ -156,13 +154,19 @@ export async function POST(request: NextRequest) {
 
     // Use streaming if requested
     if (useStream) {
-      const client = getAzureOpenAIClient();
+      const openaiClient = getOpenAIClient();
       
-      const stream = await client.chat.completions.create({
+      // Convert messages to Responses API input format
+      const input = messages.map(m => ({
+        role: m.role,
+        content: m.content,
+      }));
+
+      const stream = await (openaiClient as any).responses.create({
         model: DEPLOYMENT,
-        messages,
+        input,
         temperature: 0.7,
-        max_tokens: 2000,
+        max_output_tokens: 2000,
         stream: true,
       });
 
@@ -172,10 +176,13 @@ export async function POST(request: NextRequest) {
       const readableStream = new ReadableStream({
         async start(controller) {
           try {
-            for await (const chunk of stream) {
-              const content = chunk.choices[0]?.delta?.content || "";
-              if (content) {
-                controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+            for await (const event of stream) {
+              // Handle Responses API streaming events
+              if (event.type === 'response.output_text.delta') {
+                const content = event.delta || "";
+                if (content) {
+                  controller.enqueue(encoder.encode(`data: ${JSON.stringify({ content })}\n\n`));
+                }
               }
             }
             // Send context at the end
