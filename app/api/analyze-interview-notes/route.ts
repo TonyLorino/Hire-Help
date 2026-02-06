@@ -1,27 +1,25 @@
 import { NextRequest } from "next/server";
 import { DEPLOYMENT } from "@/lib/openai";
-import { AzureOpenAI } from "openai";
+import OpenAI from "openai";
 import type { JDMatchAnalysis, InterviewNotesAnalysis } from "@/types";
 
-let azureClient: AzureOpenAI | null = null;
+let client: OpenAI | null = null;
 
-function getAzureOpenAIClient(): AzureOpenAI {
-  if (!azureClient) {
+function getOpenAIClient(): OpenAI {
+  if (!client) {
     const apiKey = process.env.AZURE_OPENAI_API_KEY;
-    const endpoint = process.env.AZURE_OPENAI_ENDPOINT;
-    const apiVersion = process.env.AZURE_OPENAI_API_VERSION || "2025-01-01-preview";
+    const resourceName = process.env.AZURE_OPENAI_RESOURCE_NAME;
 
-    if (!apiKey || !endpoint) {
+    if (!apiKey || !resourceName) {
       throw new Error("Azure OpenAI configuration is missing.");
     }
 
-    azureClient = new AzureOpenAI({
+    client = new OpenAI({
       apiKey,
-      endpoint,
-      apiVersion,
+      baseURL: `https://${resourceName}.openai.azure.com/openai/v1/`,
     });
   }
-  return azureClient;
+  return client;
 }
 
 const SYSTEM_PROMPT = `You are a senior HR professional and talent evaluator. Your role is to synthesize interview notes with resume data and job requirements to provide comprehensive candidate assessments.
@@ -124,7 +122,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const messages = [
+    const input = [
       { role: "system" as const, content: SYSTEM_PROMPT },
       {
         role: "user" as const,
@@ -139,13 +137,13 @@ export async function POST(request: NextRequest) {
     ];
 
     if (useStream) {
-      const client = getAzureOpenAIClient();
+      const openaiClient = getOpenAIClient();
 
-      const stream = await client.chat.completions.create({
+      const stream = await (openaiClient as any).responses.create({
         model: DEPLOYMENT,
-        messages,
+        input,
         temperature: 0.6,
-        max_tokens: 4000,
+        max_output_tokens: 4000,
         stream: true,
       });
 
@@ -155,13 +153,15 @@ export async function POST(request: NextRequest) {
       const readableStream = new ReadableStream({
         async start(controller) {
           try {
-            for await (const chunk of stream) {
-              const content = chunk.choices[0]?.delta?.content || "";
-              if (content) {
-                fullContent += content;
-                controller.enqueue(
-                  encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
-                );
+            for await (const event of stream) {
+              if (event.type === 'response.output_text.delta') {
+                const content = event.delta || "";
+                if (content) {
+                  fullContent += content;
+                  controller.enqueue(
+                    encoder.encode(`data: ${JSON.stringify({ content })}\n\n`)
+                  );
+                }
               }
             }
 
@@ -190,15 +190,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Non-streaming fallback
-    const client = getAzureOpenAIClient();
-    const response = await client.chat.completions.create({
+    const openaiClient = getOpenAIClient();
+    const response = await (openaiClient as any).responses.create({
       model: DEPLOYMENT,
-      messages,
+      input,
       temperature: 0.6,
-      max_tokens: 4000,
+      max_output_tokens: 4000,
     });
 
-    const content = response.choices[0]?.message?.content || "";
+    const content = response.output_text || "";
     const analysis = parseAnalysis(candidateId, candidateName, content);
 
     return new Response(JSON.stringify({ content, analysis }), {
