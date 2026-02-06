@@ -38,6 +38,13 @@ function renderInlineMarkdown(text: string): React.ReactNode {
   });
 }
 
+// Helper to truncate text to a specified number of sentences
+function truncateToSentences(text: string, count: number): string {
+  if (!text) return "";
+  const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
+  return sentences.slice(0, count).join(" ").trim();
+}
+
 export function RecommendationsView() {
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
@@ -456,6 +463,9 @@ export function RecommendationsView() {
                       JD Match
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                      Summary
+                    </th>
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                       Interview Highlights
                     </th>
                     <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
@@ -525,28 +535,33 @@ export function RecommendationsView() {
                             <span className="text-xs text-gray-400">N/A</span>
                           )}
                         </td>
+                        <td className="px-4 py-4 max-w-xs">
+                          <p className="text-xs text-gray-600 leading-relaxed">
+                            {analysis.synopsis ? renderInlineMarkdown(truncateToSentences(analysis.synopsis, 3)) : "No summary available."}
+                          </p>
+                        </td>
                         <td className="px-4 py-4">
-                          <ul className="space-y-1">
-                            {analysis.interviewMatches?.slice(0, 2).map((item, i) => (
+                          <ul className="space-y-1.5">
+                            {analysis.interviewMatches?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
                                 className="flex items-start gap-1 text-xs text-gray-600"
                               >
                                 <CheckCircle2 className="h-3 w-3 mt-0.5 text-success flex-shrink-0" />
-                                <span className="line-clamp-1">{renderInlineMarkdown(item)}</span>
+                                <span>{renderInlineMarkdown(item)}</span>
                               </li>
                             ))}
                           </ul>
                         </td>
                         <td className="px-4 py-4">
-                          <ul className="space-y-1">
-                            {analysis.interviewGaps?.slice(0, 2).map((item, i) => (
+                          <ul className="space-y-1.5">
+                            {analysis.interviewGaps?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
                                 className="flex items-start gap-1 text-xs text-gray-600"
                               >
                                 <XCircle className="h-3 w-3 mt-0.5 text-danger flex-shrink-0" />
-                                <span className="line-clamp-1">{renderInlineMarkdown(item)}</span>
+                                <span>{renderInlineMarkdown(item)}</span>
                               </li>
                             ))}
                           </ul>
