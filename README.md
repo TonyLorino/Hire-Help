@@ -18,9 +18,9 @@ See [CHANGELOG.md](CHANGELOG.md) for recent updates.
 - **Recommendations**: View comprehensive candidate recommendations with strengths, concerns, and suggested next steps
 
 ### Post-Interview
-- **Candidate Comparison**: Side-by-side comparison table with interview highlights and key concerns
+- **Candidate Comparison**: Side-by-side comparison table with summary, interview highlights, and key concerns
 - **Hiring Manager Emails**: Generate email templates summarizing candidate performance
-- **Print & Export**: Print recommendations as PDF or copy formatted text for emails
+- **Export Options**: Export recommendations and comparison tables as PDF, PNG, or copy to clipboard
 
 ### AI Chat Assistant
 - **Streaming Responses**: Real-time AI responses with typing animation
@@ -30,13 +30,14 @@ See [CHANGELOG.md](CHANGELOG.md) for recent updates.
 
 ### Document Export
 - Export interview prep materials to PDF or Word format
+- Export recommendations and comparison tables as PDF or PNG images
 
 ## Tech Stack
 
 - **Frontend**: Next.js 14 (App Router), React, TypeScript
 - **Styling**: Tailwind CSS with Apple-inspired design
 - **State Management**: Zustand
-- **AI**: Azure OpenAI (GPT-4)
+- **AI**: Azure OpenAI (GPT-5.2 Responses API)
 - **File Processing**: pdf-parse (PDF), mammoth (Word)
 - **Export**: docx (Word documents)
 
@@ -69,9 +70,8 @@ touch .env.local
 4. Add your Azure OpenAI credentials to `.env.local`:
 ```
 AZURE_OPENAI_API_KEY=your-api-key-here
-AZURE_OPENAI_ENDPOINT=https://your-resource.openai.azure.com/
-AZURE_OPENAI_DEPLOYMENT=gpt-4.1
-AZURE_OPENAI_API_VERSION=2025-01-01-preview
+AZURE_OPENAI_RESOURCE_NAME=your-resource-name
+AZURE_OPENAI_DEPLOYMENT=gpt-5.2
 ```
 
 5. Start the development server:
@@ -86,9 +86,8 @@ npm run dev
 | Variable | Description | Required |
 |----------|-------------|----------|
 | `AZURE_OPENAI_API_KEY` | Your Azure OpenAI API key | Yes |
-| `AZURE_OPENAI_ENDPOINT` | Your Azure OpenAI endpoint URL | Yes |
-| `AZURE_OPENAI_DEPLOYMENT` | Your model deployment name (e.g., gpt-4.1) | Yes |
-| `AZURE_OPENAI_API_VERSION` | API version (default: 2025-01-01-preview) | No |
+| `AZURE_OPENAI_RESOURCE_NAME` | Your Azure OpenAI resource name (e.g., `my-resource` from `my-resource.openai.azure.com`) | Yes |
+| `AZURE_OPENAI_DEPLOYMENT` | Your model deployment name (e.g., gpt-5.2) | Yes |
 
 ## Usage
 

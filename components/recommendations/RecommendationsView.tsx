@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useRef, useCallback } from "react";
-import { User, MapPin, CheckCircle2, XCircle, ArrowRight, FileText, Printer, Copy, Check } from "lucide-react";
+import { User, MapPin, CheckCircle2, XCircle, ArrowRight, FileText, Printer, Copy, Check, Image as ImageIcon } from "lucide-react";
+import { toPng } from "html-to-image";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -47,13 +48,31 @@ function truncateToSentences(text: string, count: number): string {
 
 export function RecommendationsView() {
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
+  const [copiedTable, setCopiedTable] = React.useState(false);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
+  const comparisonTableRef = useRef<HTMLDivElement>(null);
 
   const candidates = useAppStore((state) => state.candidates);
   const analysisResults = useAppStore((state) => state.analysisResults);
   const interviewNotesAnalyses = useAppStore((state) => state.interviewNotesAnalyses);
   const interviewNotes = useAppStore((state) => state.interviewNotes);
   const setActiveTab = useAppStore((state) => state.setActiveTab);
+
+  // Check if we have any interview notes analyzed
+  const hasAnalyzedNotes = interviewNotesAnalyses.size > 0;
+
+  // Get candidates with analyzed notes
+  const analyzedCandidates = candidates.filter((c) =>
+    interviewNotesAnalyses.has(c.id)
+  );
+
+  // Sort by recommendation (advance > hold > reject)
+  const sortedCandidates = [...analyzedCandidates].sort((a, b) => {
+    const analysisA = interviewNotesAnalyses.get(a.id);
+    const analysisB = interviewNotesAnalyses.get(b.id);
+    const order = { advance: 0, hold: 1, reject: 2 };
+    return (order[analysisA?.recommendation || "hold"] || 1) - (order[analysisB?.recommendation || "hold"] || 1);
+  });
 
   // Generate plain text format for copying
   const generatePlainText = useCallback((candidate: Candidate, analysis: InterviewNotesAnalysis): string => {
@@ -228,8 +247,185 @@ export function RecommendationsView() {
     }
   }, [analysisResults]);
 
-  // Check if we have any interview notes analyzed
-  const hasAnalyzedNotes = interviewNotesAnalyses.size > 0;
+  // Handle copy comparison table to clipboard
+  const handleCopyComparisonTable = useCallback(async () => {
+    const stripMarkdown = (text: string): string => {
+      return text.replace(/\*\*([^*]+)\*\*/g, '$1').replace(/\*([^*]+)\*/g, '$1');
+    };
+
+    let text = "CANDIDATE COMPARISON\n";
+    text += "=".repeat(50) + "\n\n";
+
+    sortedCandidates.forEach((candidate) => {
+      const analysis = interviewNotesAnalyses.get(candidate.id);
+      const comparison = analysisResults?.comparisons?.find(
+        (c) => c.candidateId === candidate.id || c.name === candidate.name
+      );
+      if (!analysis) return;
+
+      text += `${candidate.name} (${candidate.location})\n`;
+      text += `-`.repeat(30) + "\n";
+      if (comparison) {
+        text += `JD Match: ${comparison.jdMatchPercent}%\n`;
+      }
+      text += `Recommendation: ${decisionLabels[analysis.recommendation]}\n\n`;
+
+      text += `Summary:\n${stripMarkdown(truncateToSentences(analysis.synopsis || "", 3))}\n\n`;
+
+      if (analysis.interviewMatches?.length) {
+        text += `Interview Highlights:\n`;
+        analysis.interviewMatches.slice(0, 8).forEach((item) => {
+          text += `  • ${stripMarkdown(item)}\n`;
+        });
+        text += "\n";
+      }
+
+      if (analysis.interviewGaps?.length) {
+        text += `Key Concerns:\n`;
+        analysis.interviewGaps.slice(0, 8).forEach((item) => {
+          text += `  • ${stripMarkdown(item)}\n`;
+        });
+        text += "\n";
+      }
+
+      text += "\n";
+    });
+
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopiedTable(true);
+      setTimeout(() => setCopiedTable(false), 2000);
+    } catch (err) {
+      console.error("Failed to copy comparison table:", err);
+    }
+  }, [sortedCandidates, interviewNotesAnalyses, analysisResults]);
+
+  // Handle print comparison table as PDF
+  const handlePrintComparisonTable = useCallback(() => {
+    const stripMarkdown = (text: string): string => {
+      return text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>').replace(/\*([^*]+)\*/g, '<em>$1</em>');
+    };
+
+    const rows = sortedCandidates.map((candidate) => {
+      const analysis = interviewNotesAnalyses.get(candidate.id);
+      const comparison = analysisResults?.comparisons?.find(
+        (c) => c.candidateId === candidate.id || c.name === candidate.name
+      );
+      if (!analysis) return "";
+
+      const highlights = analysis.interviewMatches?.slice(0, 8).map(item => 
+        `<li>${stripMarkdown(item)}</li>`
+      ).join("") || "";
+
+      const concerns = analysis.interviewGaps?.slice(0, 8).map(item => 
+        `<li>${stripMarkdown(item)}</li>`
+      ).join("") || "";
+
+      return `
+        <tr>
+          <td>
+            <strong>${candidate.name}</strong><br/>
+            <span class="location">${candidate.location}</span>
+          </td>
+          <td class="center">${comparison ? `${comparison.jdMatchPercent}%` : 'N/A'}</td>
+          <td class="summary">${analysis.synopsis ? stripMarkdown(truncateToSentences(analysis.synopsis, 3)) : 'N/A'}</td>
+          <td><ul class="highlights">${highlights}</ul></td>
+          <td><ul class="concerns">${concerns}</ul></td>
+          <td class="center"><span class="badge badge-${analysis.recommendation}">${decisionLabels[analysis.recommendation]}</span></td>
+        </tr>
+      `;
+    }).join("");
+
+    const printContent = `
+      <!DOCTYPE html>
+      <html>
+      <head>
+        <title>Candidate Comparison</title>
+        <style>
+          body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; padding: 20px; color: #333; }
+          h1 { font-size: 20px; margin-bottom: 20px; }
+          table { width: 100%; border-collapse: collapse; font-size: 11px; }
+          th { background: #f5f5f5; padding: 10px 8px; text-align: left; font-weight: 600; border-bottom: 2px solid #ddd; }
+          td { padding: 10px 8px; border-bottom: 1px solid #eee; vertical-align: top; }
+          .center { text-align: center; }
+          .location { color: #666; font-size: 10px; }
+          .summary { max-width: 200px; line-height: 1.4; }
+          ul { margin: 0; padding-left: 14px; }
+          li { margin-bottom: 4px; line-height: 1.3; }
+          .highlights li::marker { color: #16a34a; }
+          .concerns li::marker { color: #dc2626; }
+          .badge { display: inline-block; padding: 3px 8px; border-radius: 12px; font-weight: 600; font-size: 10px; }
+          .badge-advance { background: #dcfce7; color: #166534; }
+          .badge-hold { background: #fef9c3; color: #854d0e; }
+          .badge-reject { background: #fee2e2; color: #991b1b; }
+          @media print { body { padding: 10px; } }
+        </style>
+      </head>
+      <body>
+        <h1>Candidate Comparison</h1>
+        <table>
+          <thead>
+            <tr>
+              <th>Candidate</th>
+              <th>JD Match</th>
+              <th>Summary</th>
+              <th>Interview Highlights</th>
+              <th>Key Concerns</th>
+              <th>Recommendation</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rows}
+          </tbody>
+        </table>
+      </body>
+      </html>
+    `;
+
+    const printWindow = window.open('', '_blank');
+    if (printWindow) {
+      printWindow.document.write(printContent);
+      printWindow.document.close();
+      printWindow.onload = () => {
+        printWindow.print();
+      };
+    }
+  }, [sortedCandidates, interviewNotesAnalyses, analysisResults]);
+
+  // Handle export comparison table as PNG
+  const handleExportComparisonPng = useCallback(async () => {
+    if (!comparisonTableRef.current) return;
+    try {
+      const dataUrl = await toPng(comparisonTableRef.current, { 
+        backgroundColor: '#fff',
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.download = 'candidate-comparison.png';
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export comparison table as PNG:", err);
+    }
+  }, []);
+
+  // Handle export recommendation card as PNG
+  const handleExportCardPng = useCallback(async (candidateId: string, candidateName: string) => {
+    const cardEl = cardRefs.current.get(candidateId);
+    if (!cardEl) return;
+    try {
+      const dataUrl = await toPng(cardEl, { 
+        backgroundColor: '#fff',
+        pixelRatio: 2,
+      });
+      const link = document.createElement('a');
+      link.download = `recommendation-${candidateName.replace(/\s+/g, '-').toLowerCase()}.png`;
+      link.href = dataUrl;
+      link.click();
+    } catch (err) {
+      console.error("Failed to export recommendation card as PNG:", err);
+    }
+  }, []);
 
   if (candidates.length === 0) {
     return (
@@ -259,19 +455,6 @@ export function RecommendationsView() {
     );
   }
 
-  // Get candidates with analyzed notes
-  const analyzedCandidates = candidates.filter((c) =>
-    interviewNotesAnalyses.has(c.id)
-  );
-
-  // Sort by recommendation (advance > hold > reject)
-  const sortedCandidates = [...analyzedCandidates].sort((a, b) => {
-    const analysisA = interviewNotesAnalyses.get(a.id);
-    const analysisB = interviewNotesAnalyses.get(b.id);
-    const order = { advance: 0, hold: 1, reject: 2 };
-    return (order[analysisA?.recommendation || "hold"] || 1) - (order[analysisB?.recommendation || "hold"] || 1);
-  });
-
   return (
     <div className="space-y-6">
       <div>
@@ -297,7 +480,13 @@ export function RecommendationsView() {
           if (!analysis) return null;
 
           return (
-            <Card key={candidate.id} className="animate-fade-in overflow-hidden">
+            <Card 
+              key={candidate.id} 
+              className="animate-fade-in overflow-hidden"
+              ref={(el) => {
+                if (el) cardRefs.current.set(candidate.id, el);
+              }}
+            >
               {/* Recommendation Header */}
               <div
                 className={`px-5 py-3 border-b ${decisionColors[analysis.recommendation]}`}
@@ -325,6 +514,15 @@ export function RecommendationsView() {
                         title="Print as PDF"
                       >
                         <Printer className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
+                        onClick={() => handleExportCardPng(candidate.id, candidate.name)}
+                        title="Save as PNG"
+                      >
+                        <ImageIcon className="h-4 w-4" />
                       </Button>
                       <Button
                         variant="ghost"
@@ -447,11 +645,42 @@ export function RecommendationsView() {
       {/* Comparison Table */}
       {sortedCandidates.length > 1 && (
         <div className="space-y-4">
-          <h4 className="text-base font-semibold text-gray-900">
-            Candidate Comparison
-          </h4>
+          <div className="flex items-center justify-between">
+            <h4 className="text-base font-semibold text-gray-900">
+              Candidate Comparison
+            </h4>
+            <div className="flex gap-1">
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handlePrintComparisonTable}
+                title="Print as PDF"
+              >
+                <Printer className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleExportComparisonPng}
+                title="Save as PNG"
+              >
+                <ImageIcon className="h-4 w-4" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-8 w-8 p-0"
+                onClick={handleCopyComparisonTable}
+                title="Copy to clipboard"
+              >
+                {copiedTable ? <Check className="h-4 w-4 text-success" /> : <Copy className="h-4 w-4" />}
+              </Button>
+            </div>
+          </div>
 
-          <Card className="overflow-hidden">
+          <Card className="overflow-hidden" ref={comparisonTableRef}>
             <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto">
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">

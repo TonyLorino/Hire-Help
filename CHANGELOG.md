@@ -2,6 +2,34 @@
 
 All notable changes to Hire Help will be documented in this file.
 
+## [1.2.0] - 2026-02-05
+
+### Added
+
+#### Export Improvements
+- **Comparison Table Export**: New export buttons for the Candidate Comparison table:
+  - Print as PDF
+  - Save as PNG image
+  - Copy to clipboard (formatted text for emails)
+- **Recommendation Card PNG Export**: Save individual recommendation cards as PNG images
+
+#### Comparison Table Enhancements
+- **Summary Column**: New column showing 3-sentence synopsis for each candidate
+- **Full Bullet Points**: Interview highlights and key concerns now show 2-8 items with word wrap (previously limited to 2 truncated items)
+
+### Changed
+
+#### API Migration
+- **Azure OpenAI Responses API**: Migrated from Chat Completions API to the newer Responses API for GPT-5.2 support
+- **Simplified Configuration**: Now uses `AZURE_OPENAI_RESOURCE_NAME` instead of full endpoint URL and API version
+
+### Fixed
+- Fixed interview notes analysis failing after API migration
+- Fixed hiring email generation failing after API migration
+- Fixed markdown formatting (bold/italic) not rendering in recommendation synopsis
+
+---
+
 ## [1.1.0] - 2026-02-04
 
 ### Added
