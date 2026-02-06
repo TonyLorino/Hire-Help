@@ -283,7 +283,7 @@ export function RecommendationsView() {
       }
       text += `Recommendation: ${decisionLabels[analysis.recommendation]}\n\n`;
 
-      text += `Summary:\n${stripMarkdown(truncateToSentences(analysis.synopsis || "", 2, 200))}\n\n`;
+      text += `Summary:\n${stripMarkdown(truncateToSentences(analysis.synopsis || "", 2))}\n\n`;
 
       if (analysis.interviewMatches?.length) {
         text += `Interview Highlights:\n`;
@@ -341,7 +341,7 @@ export function RecommendationsView() {
             <span class="location">${candidate.location}</span>
           </td>
           <td class="center">${comparison ? `${comparison.jdMatchPercent}%` : 'N/A'}</td>
-          <td class="summary">${analysis.synopsis ? stripMarkdown(truncateToSentences(analysis.synopsis, 2, 200)) : 'N/A'}</td>
+          <td class="summary">${analysis.synopsis ? stripMarkdown(truncateToSentences(analysis.synopsis, 2)) : 'N/A'}</td>
           <td><ul class="highlights">${highlights}</ul></td>
           <td><ul class="concerns">${concerns}</ul></td>
           <td class="center"><span class="badge badge-${analysis.recommendation}">${decisionLabels[analysis.recommendation]}</span></td>
@@ -408,6 +408,20 @@ export function RecommendationsView() {
   // Handle export comparison table as PNG
   const handleExportComparisonPng = useCallback(async () => {
     if (!comparisonTableRef.current) return;
+    
+    // Find the scrollable container inside the card
+    const scrollContainer = comparisonTableRef.current.querySelector('[data-scroll-container]') as HTMLElement;
+    
+    // Store original styles
+    const originalMaxHeight = scrollContainer?.style.maxHeight;
+    const originalOverflow = scrollContainer?.style.overflow;
+    
+    // Temporarily remove constraints to show full table
+    if (scrollContainer) {
+      scrollContainer.style.maxHeight = 'none';
+      scrollContainer.style.overflow = 'visible';
+    }
+    
     try {
       const dataUrl = await toPng(comparisonTableRef.current, { 
         backgroundColor: '#fff',
@@ -419,6 +433,12 @@ export function RecommendationsView() {
       link.click();
     } catch (err) {
       console.error("Failed to export comparison table as PNG:", err);
+    } finally {
+      // Restore original styles
+      if (scrollContainer) {
+        scrollContainer.style.maxHeight = originalMaxHeight || '';
+        scrollContainer.style.overflow = originalOverflow || '';
+      }
     }
   }, []);
 
@@ -694,7 +714,7 @@ export function RecommendationsView() {
           </div>
 
           <Card className="overflow-hidden" ref={comparisonTableRef}>
-            <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto">
+            <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto" data-scroll-container>
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
                   <tr className="border-b border-gray-200">
@@ -779,7 +799,7 @@ export function RecommendationsView() {
                         </td>
                         <td className="px-4 py-4 max-w-xs">
                           <p className="text-xs text-gray-600 leading-relaxed">
-                            {analysis.synopsis ? renderInlineMarkdown(truncateToSentences(analysis.synopsis, 2, 200)) : "No summary available."}
+                            {analysis.synopsis ? renderInlineMarkdown(truncateToSentences(analysis.synopsis, 2)) : "No summary available."}
                           </p>
                         </td>
                         <td className="px-4 py-4">

@@ -1,16 +1,14 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileText, FileUp } from "lucide-react";
+import { FileText, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppStore } from "@/store/app-store";
 import { cn, isValidFileType } from "@/lib/utils";
 
 export function JDUpload() {
-  const [text, setText] = useState("");
   const [isDragging, setIsDragging] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
@@ -70,7 +68,7 @@ export function JDUpload() {
     } catch (error) {
       console.error("File processing error:", error);
       setStatusMessage("Error processing file");
-      alert("Failed to process file. Please try pasting the text directly.");
+      alert("Failed to process file. Please try a different file format.");
     } finally {
       setIsUploading(false);
       setTimeout(() => setStatusMessage(""), 2000);
@@ -81,43 +79,6 @@ export function JDUpload() {
     const formData = new FormData();
     formData.append("file", file);
     return formData;
-  };
-
-  const handlePasteSubmit = async () => {
-    if (!text.trim()) return;
-
-    setIsUploading(true);
-    setStatusMessage("Extracting job information...");
-
-    try {
-      // Create a text file blob to send to the API
-      const blob = new Blob([text], { type: "text/plain" });
-      const file = new File([blob], "job-description.txt", { type: "text/plain" });
-      
-      const formData = new FormData();
-      formData.append("file", file);
-
-      const response = await fetch("/api/parse-jd", {
-        method: "POST",
-        body: formData,
-      });
-
-      if (response.ok) {
-        const { jobInfo } = await response.json();
-        setStatusMessage(`✓ ${jobInfo.jobTitle || "Job Description"} loaded`);
-        setJobDescription(text.trim(), jobInfo);
-      } else {
-        // Fallback: just use the text without job info
-        setJobDescription(text.trim());
-      }
-    } catch (error) {
-      console.error("Processing error:", error);
-      // Fallback: just use the text
-      setJobDescription(text.trim());
-    } finally {
-      setIsUploading(false);
-      setTimeout(() => setStatusMessage(""), 2000);
-    }
   };
 
   const handleDrop = async (e: React.DragEvent) => {
@@ -168,7 +129,7 @@ export function JDUpload() {
           />
 
           {/* Upload area */}
-          <div className="flex flex-col items-center text-center mb-4 py-4">
+          <div className="flex flex-col items-center text-center py-4">
             {isUploading ? (
               <>
                 <Spinner className="mb-3" />
@@ -183,7 +144,7 @@ export function JDUpload() {
                   Upload job description
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  PDF, Word, or text file - auto-processes on upload
+                  PDF, Word, or text file
                 </p>
                 <Button
                   variant="outline"
@@ -198,41 +159,6 @@ export function JDUpload() {
               </>
             )}
           </div>
-
-          {/* Divider */}
-          <div className="flex items-center gap-3 my-4">
-            <div className="flex-1 h-px bg-gray-200" />
-            <span className="text-xs text-gray-400">or paste text</span>
-            <div className="flex-1 h-px bg-gray-200" />
-          </div>
-
-          {/* Text input for paste */}
-          <Textarea
-            placeholder="Paste the job description text here..."
-            value={text}
-            onChange={(e) => setText(e.target.value)}
-            className="min-h-[120px] bg-white resize-none"
-            disabled={isUploading}
-          />
-
-          {/* Submit button for pasted text only */}
-          <Button
-            onClick={handlePasteSubmit}
-            disabled={!text.trim() || isUploading}
-            className="w-full mt-4"
-          >
-            {isUploading ? (
-              <>
-                <Spinner size="sm" className="mr-2" />
-                Processing...
-              </>
-            ) : (
-              <>
-                <Upload className="mr-2 h-4 w-4" />
-                Upload Pasted Text
-              </>
-            )}
-          </Button>
         </div>
       </CardContent>
     </Card>
