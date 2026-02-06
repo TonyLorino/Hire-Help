@@ -39,11 +39,24 @@ function renderInlineMarkdown(text: string): React.ReactNode {
   });
 }
 
-// Helper to truncate text to a specified number of sentences
-function truncateToSentences(text: string, count: number): string {
+// Helper to truncate text to a specified number of sentences with optional character limit
+function truncateToSentences(text: string, count: number, maxChars?: number): string {
   if (!text) return "";
   const sentences = text.match(/[^.!?]+[.!?]+/g) || [];
-  return sentences.slice(0, count).join(" ").trim();
+  let result = sentences.slice(0, count).join(" ").trim();
+  
+  // Apply character limit if specified
+  if (maxChars && result.length > maxChars) {
+    result = result.substring(0, maxChars).trim();
+    // Try to end at a word boundary
+    const lastSpace = result.lastIndexOf(" ");
+    if (lastSpace > maxChars * 0.7) {
+      result = result.substring(0, lastSpace);
+    }
+    result += "...";
+  }
+  
+  return result;
 }
 
 export function RecommendationsView() {
@@ -270,7 +283,7 @@ export function RecommendationsView() {
       }
       text += `Recommendation: ${decisionLabels[analysis.recommendation]}\n\n`;
 
-      text += `Summary:\n${stripMarkdown(truncateToSentences(analysis.synopsis || "", 3))}\n\n`;
+      text += `Summary:\n${stripMarkdown(truncateToSentences(analysis.synopsis || "", 2, 200))}\n\n`;
 
       if (analysis.interviewMatches?.length) {
         text += `Interview Highlights:\n`;
@@ -328,7 +341,7 @@ export function RecommendationsView() {
             <span class="location">${candidate.location}</span>
           </td>
           <td class="center">${comparison ? `${comparison.jdMatchPercent}%` : 'N/A'}</td>
-          <td class="summary">${analysis.synopsis ? stripMarkdown(truncateToSentences(analysis.synopsis, 3)) : 'N/A'}</td>
+          <td class="summary">${analysis.synopsis ? stripMarkdown(truncateToSentences(analysis.synopsis, 2, 200)) : 'N/A'}</td>
           <td><ul class="highlights">${highlights}</ul></td>
           <td><ul class="concerns">${concerns}</ul></td>
           <td class="center"><span class="badge badge-${analysis.recommendation}">${decisionLabels[analysis.recommendation]}</span></td>
@@ -766,7 +779,7 @@ export function RecommendationsView() {
                         </td>
                         <td className="px-4 py-4 max-w-xs">
                           <p className="text-xs text-gray-600 leading-relaxed">
-                            {analysis.synopsis ? renderInlineMarkdown(truncateToSentences(analysis.synopsis, 3)) : "No summary available."}
+                            {analysis.synopsis ? renderInlineMarkdown(truncateToSentences(analysis.synopsis, 2, 200)) : "No summary available."}
                           </p>
                         </td>
                         <td className="px-4 py-4">
