@@ -176,7 +176,7 @@ export function RecommendationsView() {
         
         <div class="section">
           <div class="section-title">Interview Synopsis</div>
-          <div class="synopsis">${analysis.synopsis || "No synopsis available."}</div>
+          <div class="synopsis">${analysis.synopsis ? stripMarkdown(analysis.synopsis) : "No synopsis available."}</div>
         </div>
         
         <div class="grid">
@@ -357,7 +357,7 @@ export function RecommendationsView() {
                     Interview Synopsis
                   </h5>
                   <p className="text-sm text-gray-600 leading-relaxed">
-                    {analysis.synopsis || "No synopsis available."}
+                    {analysis.synopsis ? renderInlineMarkdown(analysis.synopsis) : "No synopsis available."}
                   </p>
                 </div>
 
