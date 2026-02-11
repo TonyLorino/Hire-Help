@@ -140,12 +140,24 @@ export function InterviewPrepView() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">
-        Interview Preparation
-      </h3>
+      <div>
+        <h3 className="text-lg font-semibold text-gray-900">
+          Interview Preparation
+        </h3>
+        <p className="text-sm text-gray-500 mt-1">
+          Select a candidate below to generate personalized interview questions and talking points
+        </p>
+      </div>
 
       {/* Candidate Selection */}
-      <div className="flex flex-wrap gap-2">
+      <div className="space-y-2">
+        {!selectedCandidateId && (
+          <p className="text-xs text-primary flex items-center gap-1.5 animate-subtle-bounce">
+            <span className="inline-block w-1.5 h-1.5 rounded-full bg-primary"></span>
+            Click a candidate name to begin
+          </p>
+        )}
+        <div className="flex flex-wrap gap-2">
         {candidates.map((candidate) => {
           const hasPrep = interviewPreps.has(candidate.id);
           return (
@@ -172,6 +184,7 @@ export function InterviewPrepView() {
             </Button>
           );
         })}
+        </div>
       </div>
 
       {/* Interview Prep Content */}
