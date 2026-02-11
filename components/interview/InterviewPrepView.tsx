@@ -3,11 +3,12 @@
 import { useState } from "react";
 import { Download, FileText, User, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
+import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
 import { useAppStore } from "@/store/app-store";
 import { QuestionsTable } from "./QuestionsTable";
+import { AnimatedCard, AnimatedCardSkeleton } from "@/components/ui/animated-card";
+import { TypewriterParagraph } from "@/components/ui/typewriter-text";
 
 export function InterviewPrepView() {
   const [isLoading, setIsLoading] = useState(false);
@@ -121,13 +122,13 @@ export function InterviewPrepView() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900">
+      <h3 className="text-lg font-semibold text-gray-900 animate-fade-in">
         Interview Preparation
       </h3>
 
       {/* Candidate Selection */}
       <div className="flex flex-wrap gap-2">
-        {candidates.map((candidate) => {
+        {candidates.map((candidate, index) => {
           const hasPrep = interviewPreps.has(candidate.id);
           return (
             <Button
@@ -141,6 +142,8 @@ export function InterviewPrepView() {
                 }
               }}
               disabled={isLoading && selectedCandidateId === candidate.id}
+              className="animate-fade-in-up"
+              style={{ animationDelay: `${index * 50}ms` }}
             >
               {isLoading && selectedCandidateId === candidate.id ? (
                 <Spinner size="sm" className="mr-2" />
@@ -157,9 +160,9 @@ export function InterviewPrepView() {
 
       {/* Interview Prep Content */}
       {currentPrep && (
-        <div className="space-y-6 animate-fade-in">
+        <div className="space-y-6">
           {/* Export Buttons */}
-          <div className="flex gap-2 justify-end">
+          <div className="flex gap-2 justify-end animate-fade-in">
             <Button variant="outline" size="sm" onClick={() => handleExport("pdf")}>
               <Download className="h-4 w-4 mr-2" />
               Export PDF
@@ -170,53 +173,73 @@ export function InterviewPrepView() {
             </Button>
           </div>
 
-          {/* Summary */}
-          <Card>
+          {/* Summary Card with animation */}
+          <AnimatedCard delay={0} duration={500}>
             <CardHeader>
               <CardTitle className="text-base">
                 {currentPrep.candidateName}
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
-              <p className="text-sm text-gray-600">{currentPrep.summary}</p>
+              <div className="text-sm text-gray-600">
+                <TypewriterParagraph
+                  text={currentPrep.summary}
+                  speed={200}
+                  delay={500}
+                />
+              </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 bg-success-light rounded-apple">
+                <div className="p-4 bg-success-light rounded-apple animate-fade-in-up" style={{ animationDelay: "300ms" }}>
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
                     <span className="text-sm font-medium text-success">
                       Matches JD
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {currentPrep.matchOverview}
-                  </p>
+                  <div className="text-sm text-gray-600">
+                    <TypewriterParagraph
+                      text={currentPrep.matchOverview}
+                      speed={180}
+                      delay={800}
+                    />
+                  </div>
                 </div>
 
-                <div className="p-4 bg-warning-light rounded-apple">
+                <div className="p-4 bg-warning-light rounded-apple animate-fade-in-up" style={{ animationDelay: "400ms" }}>
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="h-4 w-4 text-warning" />
                     <span className="text-sm font-medium text-warning">
                       Areas to Explore
                     </span>
                   </div>
-                  <p className="text-sm text-gray-600">
-                    {currentPrep.gapOverview}
-                  </p>
+                  <div className="text-sm text-gray-600">
+                    <TypewriterParagraph
+                      text={currentPrep.gapOverview}
+                      speed={180}
+                      delay={1000}
+                    />
+                  </div>
                 </div>
               </div>
             </CardContent>
-          </Card>
+          </AnimatedCard>
 
-          {/* Questions Table */}
-          <QuestionsTable questions={currentPrep.questions} />
+          {/* Questions Table with animation */}
+          <div className="animate-scale-in" style={{ animationDelay: "200ms" }}>
+            <QuestionsTable questions={currentPrep.questions} />
+          </div>
         </div>
       )}
 
       {isLoading && !currentPrep && (
-        <div className="flex items-center justify-center py-12">
-          <Spinner className="mr-3" />
-          <span className="text-gray-500">Generating interview prep...</span>
+        <div className="space-y-6">
+          {/* Skeleton card while loading */}
+          <AnimatedCardSkeleton className="h-64" />
+          <div className="flex items-center justify-center py-4">
+            <Spinner className="mr-3" />
+            <span className="text-gray-500">Generating interview prep...</span>
+          </div>
         </div>
       )}
     </div>

@@ -1,8 +1,10 @@
 "use client";
 
 import { User, MapPin } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { CardContent } from "@/components/ui/card";
 import { useAppStore } from "@/store/app-store";
+import { AnimatedCard } from "@/components/ui/animated-card";
+import { TypewriterParagraph } from "@/components/ui/typewriter-text";
 
 export function CandidateSummary() {
   const analysisResults = useAppStore((state) => state.analysisResults);
@@ -34,12 +36,17 @@ export function CandidateSummary() {
         Candidate Summaries
       </h3>
       <div className="grid gap-4 md:grid-cols-2">
-        {analysisResults.summaries.map((summary) => {
+        {analysisResults.summaries.map((summary, index) => {
           const displayName = getCandidateName(summary.candidateId, summary.name);
           const displayLocation = getCandidateLocation(summary.candidateId, summary.location);
           
           return (
-            <Card key={summary.candidateId} className="hover-lift animate-fade-in">
+            <AnimatedCard
+              key={summary.candidateId}
+              className="hover-lift"
+              delay={index * 100}
+              duration={500}
+            >
               <CardContent className="p-5">
                 {/* Header */}
                 <div className="flex items-start gap-4 mb-4">
@@ -57,12 +64,16 @@ export function CandidateSummary() {
                   </div>
                 </div>
 
-                {/* Summary */}
-                <div className="text-sm text-gray-600 leading-relaxed whitespace-pre-wrap">
-                  {summary.summary}
+                {/* Summary with typewriter effect */}
+                <div className="text-sm text-gray-600 leading-relaxed">
+                  <TypewriterParagraph
+                    text={summary.summary}
+                    speed={200}
+                    delay={index * 100 + 600}
+                  />
                 </div>
               </CardContent>
-            </Card>
+            </AnimatedCard>
           );
         })}
       </div>

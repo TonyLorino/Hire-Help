@@ -1,12 +1,14 @@
 "use client";
 
-import React, { useRef, useCallback } from "react";
+import React, { useRef, useCallback, useState, useEffect } from "react";
 import { User, MapPin, CheckCircle2, XCircle, ArrowRight, FileText, Printer, Copy, Check, Image as ImageIcon } from "lucide-react";
 import { toPng } from "html-to-image";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { useAppStore } from "@/store/app-store";
+import { AnimatedCard, AnimatedCardSkeleton } from "@/components/ui/animated-card";
+import { TypewriterParagraph, TypewriterList } from "@/components/ui/typewriter-text";
 import type { InterviewDecision, RecommendationLevel, InterviewNotesAnalysis, Candidate } from "@/types";
 
 const decisionLabels: Record<InterviewDecision, string> = {
@@ -62,6 +64,9 @@ function truncateToSentences(text: string, count: number, maxChars?: number): st
 export function RecommendationsView() {
   const [copiedId, setCopiedId] = React.useState<string | null>(null);
   const [copiedTable, setCopiedTable] = React.useState(false);
+  const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
+  const [visibleRows, setVisibleRows] = useState<Set<string>>(new Set());
+  const [animationKey, setAnimationKey] = useState(0);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const comparisonTableRef = useRef<HTMLDivElement>(null);
 
@@ -86,6 +91,31 @@ export function RecommendationsView() {
     const order = { advance: 0, hold: 1, reject: 2 };
     return (order[analysisA?.recommendation || "hold"] || 1) - (order[analysisB?.recommendation || "hold"] || 1);
   });
+
+  // Stagger card visibility animation
+  useEffect(() => {
+    setVisibleCards(new Set());
+    setAnimationKey(prev => prev + 1);
+    
+    sortedCandidates.forEach((candidate, index) => {
+      setTimeout(() => {
+        setVisibleCards(prev => new Set([...prev, candidate.id]));
+      }, index * 150);
+    });
+  }, [interviewNotesAnalyses, candidates]);
+
+  // Stagger table row visibility animation
+  useEffect(() => {
+    if (sortedCandidates.length > 1) {
+      setVisibleRows(new Set());
+      
+      sortedCandidates.forEach((candidate, index) => {
+        setTimeout(() => {
+          setVisibleRows(prev => new Set([...prev, candidate.id]));
+        }, index * 200 + 500); // Start after cards begin appearing
+      });
+    }
+  }, [interviewNotesAnalyses, candidates]);
 
   // Generate plain text format for copying
   const generatePlainText = useCallback((candidate: Candidate, analysis: InterviewNotesAnalysis): string => {
@@ -490,7 +520,7 @@ export function RecommendationsView() {
 
   return (
     <div className="space-y-6">
-      <div>
+      <div className="animate-fade-in">
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
           Candidate Recommendations
         </h3>
@@ -501,7 +531,7 @@ export function RecommendationsView() {
 
       {/* Recommendation Cards */}
       <div className="space-y-4">
-        {sortedCandidates.map((candidate) => {
+        {sortedCandidates.map((candidate, cardIndex) => {
           const analysis = interviewNotesAnalyses.get(candidate.id);
           const jdMatch = analysisResults?.jdMatches?.find(
             (m) => m.candidateId === candidate.id || m.name === candidate.name
@@ -509,175 +539,186 @@ export function RecommendationsView() {
           const comparison = analysisResults?.comparisons?.find(
             (c) => c.candidateId === candidate.id || c.name === candidate.name
           );
+          const isVisible = visibleCards.has(candidate.id);
 
           if (!analysis) return null;
 
+          const strengths = [
+            ...(analysis.interviewMatches || []).slice(0, 3),
+            ...(analysis.resumeMatches || []).slice(0, 2),
+          ];
+          const concerns = [
+            ...(analysis.interviewGaps || []).slice(0, 3),
+            ...(analysis.resumeGaps || []).slice(0, 2),
+          ];
+
           return (
-            <Card 
-              key={candidate.id} 
-              className="animate-fade-in overflow-hidden"
-              ref={(el) => {
-                if (el) cardRefs.current.set(candidate.id, el);
-              }}
+            <AnimatedCard
+              key={`${candidate.id}-${animationKey}`}
+              delay={cardIndex * 150}
+              duration={500}
+              className="overflow-hidden"
             >
-              {/* Recommendation Header */}
               <div
-                className={`px-5 py-3 border-b ${decisionColors[analysis.recommendation]}`}
+                ref={(el) => {
+                  if (el) cardRefs.current.set(candidate.id, el);
+                }}
               >
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50">
-                      <User className="h-5 w-5" />
+                {/* Recommendation Header */}
+                <div
+                  className={`px-5 py-3 border-b ${decisionColors[analysis.recommendation]}`}
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white/50">
+                        <User className="h-5 w-5" />
+                      </div>
+                      <div>
+                        <h4 className="font-semibold">{candidate.name}</h4>
+                        <div className="flex items-center gap-1 text-sm opacity-80">
+                          <MapPin className="h-3.5 w-3.5" />
+                          {candidate.location}
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <h4 className="font-semibold">{candidate.name}</h4>
-                      <div className="flex items-center gap-1 text-sm opacity-80">
-                        <MapPin className="h-3.5 w-3.5" />
-                        {candidate.location}
+                    <div className="flex items-center gap-3">
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
+                          onClick={() => handlePrint(candidate.id, candidate, analysis)}
+                          title="Print as PDF"
+                        >
+                          <Printer className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
+                          onClick={() => handleExportCardPng(candidate.id, candidate.name)}
+                          title="Save as PNG"
+                        >
+                          <ImageIcon className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
+                          onClick={() => handleCopy(candidate.id, candidate, analysis)}
+                          title="Copy to clipboard"
+                        >
+                          {copiedId === candidate.id ? (
+                            <Check className="h-4 w-4 text-success" />
+                          ) : (
+                            <Copy className="h-4 w-4" />
+                          )}
+                        </Button>
+                      </div>
+                      <div className="text-right">
+                        <Badge
+                          variant={analysis.recommendation as RecommendationLevel}
+                          className="text-sm"
+                        >
+                          {decisionLabels[analysis.recommendation]}
+                        </Badge>
+                        {comparison && (
+                          <div className="text-xs mt-1 opacity-80">
+                            JD Match: {comparison.jdMatchPercent}%
+                          </div>
+                        )}
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div className="flex gap-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
-                        onClick={() => handlePrint(candidate.id, candidate, analysis)}
-                        title="Print as PDF"
-                      >
-                        <Printer className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
-                        onClick={() => handleExportCardPng(candidate.id, candidate.name)}
-                        title="Save as PNG"
-                      >
-                        <ImageIcon className="h-4 w-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        className="h-8 w-8 p-0 bg-white/30 hover:bg-white/50"
-                        onClick={() => handleCopy(candidate.id, candidate, analysis)}
-                        title="Copy to clipboard"
-                      >
-                        {copiedId === candidate.id ? (
-                          <Check className="h-4 w-4 text-success" />
-                        ) : (
-                          <Copy className="h-4 w-4" />
-                        )}
-                      </Button>
-                    </div>
-                    <div className="text-right">
-                      <Badge
-                        variant={analysis.recommendation as RecommendationLevel}
-                        className="text-sm"
-                      >
-                        {decisionLabels[analysis.recommendation]}
-                      </Badge>
-                      {comparison && (
-                        <div className="text-xs mt-1 opacity-80">
-                          JD Match: {comparison.jdMatchPercent}%
-                        </div>
+                </div>
+
+                <CardContent className="p-5">
+                  {/* Synopsis with typewriter */}
+                  <div className="mb-4">
+                    <h5 className="text-sm font-medium text-gray-700 mb-2">
+                      Interview Synopsis
+                    </h5>
+                    <div className="text-sm text-gray-600 leading-relaxed">
+                      {analysis.synopsis ? (
+                        <TypewriterParagraph
+                          text={analysis.synopsis}
+                          speed={200}
+                          delay={cardIndex * 150 + 600}
+                        />
+                      ) : (
+                        "No synopsis available."
                       )}
                     </div>
                   </div>
-                </div>
+
+                  {/* Matches and Gaps Grid */}
+                  <div className="grid gap-4 md:grid-cols-2 mb-4">
+                    {/* Strengths */}
+                    <div className="p-4 bg-success-light/50 rounded-apple animate-fade-in-up" style={{ animationDelay: `${cardIndex * 150 + 300}ms` }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <CheckCircle2 className="h-4 w-4 text-success" />
+                        <span className="text-sm font-medium text-success">
+                          Strengths & Matches
+                        </span>
+                      </div>
+                      <TypewriterList
+                        items={strengths}
+                        speed={100}
+                        staggerDelay={150}
+                        initialDelay={cardIndex * 150 + 800}
+                        className="space-y-1.5"
+                        itemClassName="text-xs text-gray-600"
+                        renderBullet={() => <span className="text-success mt-0.5">•</span>}
+                      />
+                    </div>
+
+                    {/* Concerns */}
+                    <div className="p-4 bg-danger-light/50 rounded-apple animate-fade-in-up" style={{ animationDelay: `${cardIndex * 150 + 400}ms` }}>
+                      <div className="flex items-center gap-2 mb-3">
+                        <XCircle className="h-4 w-4 text-danger" />
+                        <span className="text-sm font-medium text-danger">
+                          Concerns & Gaps
+                        </span>
+                      </div>
+                      <TypewriterList
+                        items={concerns}
+                        speed={100}
+                        staggerDelay={150}
+                        initialDelay={cardIndex * 150 + 1000}
+                        className="space-y-1.5"
+                        itemClassName="text-xs text-gray-600"
+                        renderBullet={() => <span className="text-danger mt-0.5">•</span>}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Next Steps */}
+                  {analysis.nextSteps && analysis.nextSteps.length > 0 && (
+                    <div className="p-3 bg-gray-50 rounded-apple animate-fade-in-up" style={{ animationDelay: `${cardIndex * 150 + 500}ms` }}>
+                      <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                        Suggested Next Steps
+                      </h5>
+                      <TypewriterList
+                        items={analysis.nextSteps}
+                        speed={100}
+                        staggerDelay={120}
+                        initialDelay={cardIndex * 150 + 1200}
+                        className="space-y-1"
+                        itemClassName="text-xs text-gray-600"
+                        renderBullet={() => <ArrowRight className="h-3 w-3 mt-0.5 text-primary flex-shrink-0" />}
+                      />
+                    </div>
+                  )}
+                </CardContent>
               </div>
-
-              <CardContent className="p-5">
-                {/* Synopsis */}
-                <div className="mb-4">
-                  <h5 className="text-sm font-medium text-gray-700 mb-2">
-                    Interview Synopsis
-                  </h5>
-                  <p className="text-sm text-gray-600 leading-relaxed">
-                    {analysis.synopsis ? renderInlineMarkdown(analysis.synopsis) : "No synopsis available."}
-                  </p>
-                </div>
-
-                {/* Matches and Gaps Grid */}
-                <div className="grid gap-4 md:grid-cols-2 mb-4">
-                  {/* Strengths */}
-                  <div className="p-4 bg-success-light/50 rounded-apple">
-                    <div className="flex items-center gap-2 mb-3">
-                      <CheckCircle2 className="h-4 w-4 text-success" />
-                      <span className="text-sm font-medium text-success">
-                        Strengths & Matches
-                      </span>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {[
-                        ...(analysis.interviewMatches || []).slice(0, 3),
-                        ...(analysis.resumeMatches || []).slice(0, 2),
-                      ].map((item, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-xs text-gray-600"
-                        >
-                          <span className="text-success mt-0.5">•</span>
-                          <span>{renderInlineMarkdown(item)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-
-                  {/* Concerns */}
-                  <div className="p-4 bg-danger-light/50 rounded-apple">
-                    <div className="flex items-center gap-2 mb-3">
-                      <XCircle className="h-4 w-4 text-danger" />
-                      <span className="text-sm font-medium text-danger">
-                        Concerns & Gaps
-                      </span>
-                    </div>
-                    <ul className="space-y-1.5">
-                      {[
-                        ...(analysis.interviewGaps || []).slice(0, 3),
-                        ...(analysis.resumeGaps || []).slice(0, 2),
-                      ].map((item, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-xs text-gray-600"
-                        >
-                          <span className="text-danger mt-0.5">•</span>
-                          <span>{renderInlineMarkdown(item)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-
-                {/* Next Steps */}
-                {analysis.nextSteps && analysis.nextSteps.length > 0 && (
-                  <div className="p-3 bg-gray-50 rounded-apple">
-                    <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
-                      Suggested Next Steps
-                    </h5>
-                    <ul className="space-y-1">
-                      {analysis.nextSteps.map((step, i) => (
-                        <li
-                          key={i}
-                          className="flex items-start gap-2 text-xs text-gray-600"
-                        >
-                          <ArrowRight className="h-3 w-3 mt-0.5 text-primary" />
-                          <span>{renderInlineMarkdown(step)}</span>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            </AnimatedCard>
           );
         })}
       </div>
 
       {/* Comparison Table */}
       {sortedCandidates.length > 1 && (
-        <div className="space-y-4">
+        <div className="space-y-4 animate-fade-in" style={{ animationDelay: "300ms" }}>
           <div className="flex items-center justify-between">
             <h4 className="text-base font-semibold text-gray-900">
               Candidate Comparison
@@ -713,7 +754,7 @@ export function RecommendationsView() {
             </div>
           </div>
 
-          <Card className="overflow-hidden" ref={comparisonTableRef}>
+          <Card className="overflow-hidden animate-scale-in" ref={comparisonTableRef} style={{ animationDelay: "400ms" }}>
             <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto" data-scroll-container>
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
@@ -739,18 +780,21 @@ export function RecommendationsView() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {sortedCandidates.map((candidate) => {
+                  {sortedCandidates.map((candidate, rowIndex) => {
                     const analysis = interviewNotesAnalyses.get(candidate.id);
                     const comparison = analysisResults?.comparisons?.find(
                       (c) => c.candidateId === candidate.id || c.name === candidate.name
                     );
+                    const isVisible = visibleRows.has(candidate.id);
 
                     if (!analysis) return null;
 
                     return (
                       <tr
-                        key={candidate.id}
-                        className="hover:bg-gray-50 transition-colors"
+                        key={`${candidate.id}-table-${animationKey}`}
+                        className={`hover:bg-gray-50 transition-all duration-300 ${
+                          isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
+                        }`}
                       >
                         <td className="px-4 py-4">
                           <div>
@@ -765,7 +809,9 @@ export function RecommendationsView() {
                         </td>
                         <td className="px-4 py-4 text-center">
                           {comparison ? (
-                            <div className="inline-flex items-center justify-center">
+                            <div className={`inline-flex items-center justify-center transition-opacity duration-500 ${
+                              isVisible ? "opacity-100" : "opacity-0"
+                            }`} style={{ transitionDelay: isVisible ? "200ms" : "0ms" }}>
                               <div className="relative w-10 h-10">
                                 <svg className="w-10 h-10 transform -rotate-90">
                                   <circle
@@ -784,8 +830,9 @@ export function RecommendationsView() {
                                     stroke="currentColor"
                                     strokeWidth="3"
                                     fill="none"
-                                    strokeDasharray={`${comparison.jdMatchPercent * 1.005} 100.5`}
-                                    className="text-primary"
+                                    strokeDasharray={isVisible ? `${comparison.jdMatchPercent * 1.005} 100.5` : "0 100.5"}
+                                    className="text-primary transition-all duration-1000"
+                                    style={{ transitionDelay: isVisible ? `${rowIndex * 200 + 300}ms` : "0ms" }}
                                   />
                                 </svg>
                                 <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
@@ -807,7 +854,10 @@ export function RecommendationsView() {
                             {analysis.interviewMatches?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
-                                className="flex items-start gap-1 text-xs text-gray-600"
+                                className={`flex items-start gap-1 text-xs text-gray-600 transition-opacity duration-200 ${
+                                  isVisible ? "opacity-100" : "opacity-0"
+                                }`}
+                                style={{ transitionDelay: isVisible ? `${i * 50 + 100}ms` : "0ms" }}
                               >
                                 <CheckCircle2 className="h-3 w-3 mt-0.5 text-success flex-shrink-0" />
                                 <span>{renderInlineMarkdown(item)}</span>
@@ -820,7 +870,10 @@ export function RecommendationsView() {
                             {analysis.interviewGaps?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
-                                className="flex items-start gap-1 text-xs text-gray-600"
+                                className={`flex items-start gap-1 text-xs text-gray-600 transition-opacity duration-200 ${
+                                  isVisible ? "opacity-100" : "opacity-0"
+                                }`}
+                                style={{ transitionDelay: isVisible ? `${i * 50 + 100}ms` : "0ms" }}
                               >
                                 <XCircle className="h-3 w-3 mt-0.5 text-danger flex-shrink-0" />
                                 <span>{renderInlineMarkdown(item)}</span>
@@ -829,11 +882,15 @@ export function RecommendationsView() {
                           </ul>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <Badge
-                            variant={analysis.recommendation as RecommendationLevel}
-                          >
-                            {decisionLabels[analysis.recommendation]}
-                          </Badge>
+                          <div className={`transition-all duration-300 ${
+                            isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
+                          }`} style={{ transitionDelay: isVisible ? "300ms" : "0ms" }}>
+                            <Badge
+                              variant={analysis.recommendation as RecommendationLevel}
+                            >
+                              {decisionLabels[analysis.recommendation]}
+                            </Badge>
+                          </div>
                         </td>
                       </tr>
                     );
