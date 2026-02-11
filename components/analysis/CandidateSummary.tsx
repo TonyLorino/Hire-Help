@@ -1,14 +1,30 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { User, MapPin } from "lucide-react";
 import { CardContent } from "@/components/ui/card";
-import { useAppStore } from "@/store/app-store";
+import { useAppStore, hasBeenAnimated, markAsAnimated } from "@/store/app-store";
 import { AnimatedCard } from "@/components/ui/animated-card";
 import { TypewriterParagraph } from "@/components/ui/typewriter-text";
 
 export function CandidateSummary() {
   const analysisResults = useAppStore((state) => state.analysisResults);
   const candidates = useAppStore((state) => state.candidates);
+  const animatedRef = useRef<Set<string>>(new Set());
+
+  // Track which items should animate (only new ones)
+  useEffect(() => {
+    if (analysisResults?.summaries) {
+      analysisResults.summaries.forEach(s => {
+        const key = `summary-${s.candidateId}`;
+        if (!hasBeenAnimated(key)) {
+          // Will be animated
+        } else {
+          animatedRef.current.add(s.candidateId);
+        }
+      });
+    }
+  }, [analysisResults?.summaries]);
 
   if (!analysisResults?.summaries?.length) {
     return (
@@ -39,13 +55,17 @@ export function CandidateSummary() {
         {analysisResults.summaries.map((summary, index) => {
           const displayName = getCandidateName(summary.candidateId, summary.name);
           const displayLocation = getCandidateLocation(summary.candidateId, summary.location);
+          const animationKey = `summary-${summary.candidateId}`;
+          const skipAnim = hasBeenAnimated(animationKey);
           
           return (
             <AnimatedCard
               key={summary.candidateId}
               className="hover-lift"
-              delay={index * 100}
+              delay={skipAnim ? 0 : index * 100}
               duration={500}
+              skipAnimation={skipAnim}
+              onAnimationComplete={() => markAsAnimated(animationKey)}
             >
               <CardContent className="p-5">
                 {/* Header */}
@@ -69,7 +89,8 @@ export function CandidateSummary() {
                   <TypewriterParagraph
                     text={summary.summary}
                     speed={200}
-                    delay={index * 100 + 600}
+                    delay={skipAnim ? 0 : index * 100 + 600}
+                    skipAnimation={skipAnim}
                   />
                 </div>
               </CardContent>

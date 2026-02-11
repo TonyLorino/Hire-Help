@@ -6,8 +6,8 @@ import { toPng } from "html-to-image";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { useAppStore } from "@/store/app-store";
-import { AnimatedCard, AnimatedCardSkeleton } from "@/components/ui/animated-card";
+import { useAppStore, hasBeenAnimated, markAsAnimated } from "@/store/app-store";
+import { AnimatedCard } from "@/components/ui/animated-card";
 import { TypewriterParagraph, TypewriterList } from "@/components/ui/typewriter-text";
 import type { InterviewDecision, RecommendationLevel, InterviewNotesAnalysis, Candidate } from "@/types";
 
@@ -66,7 +66,6 @@ export function RecommendationsView() {
   const [copiedTable, setCopiedTable] = React.useState(false);
   const [visibleCards, setVisibleCards] = useState<Set<string>>(new Set());
   const [visibleRows, setVisibleRows] = useState<Set<string>>(new Set());
-  const [animationKey, setAnimationKey] = useState(0);
   const cardRefs = useRef<Map<string, HTMLDivElement>>(new Map());
   const comparisonTableRef = useRef<HTMLDivElement>(null);
 
@@ -92,30 +91,54 @@ export function RecommendationsView() {
     return (order[analysisA?.recommendation || "hold"] || 1) - (order[analysisB?.recommendation || "hold"] || 1);
   });
 
+  // Track if we should animate - only if new data that hasn't been seen
+  const recommendationsKey = sortedCandidates.map(c => c.id).join('-');
+  const skipAnimation = hasBeenAnimated(`recommendations-${recommendationsKey}`);
+  const initializedRef = useRef(false);
+
   // Stagger card visibility animation
   useEffect(() => {
+    if (skipAnimation || sortedCandidates.length === 0) {
+      // Show all immediately
+      setVisibleCards(new Set(sortedCandidates.map(c => c.id)));
+      setVisibleRows(new Set(sortedCandidates.map(c => c.id)));
+      return;
+    }
+    
+    // Prevent re-animation within same render cycle
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    
     setVisibleCards(new Set());
-    setAnimationKey(prev => prev + 1);
     
     sortedCandidates.forEach((candidate, index) => {
       setTimeout(() => {
         setVisibleCards(prev => new Set([...prev, candidate.id]));
       }, index * 150);
     });
-  }, [interviewNotesAnalyses, candidates]);
+    
+    // Mark as animated after all cards are visible
+    const totalDelay = sortedCandidates.length * 150 + 1000;
+    setTimeout(() => {
+      markAsAnimated(`recommendations-${recommendationsKey}`);
+    }, totalDelay);
+  }, [interviewNotesAnalyses, candidates, skipAnimation, recommendationsKey, sortedCandidates]);
 
-  // Stagger table row visibility animation
+  // Stagger table row visibility animation  
   useEffect(() => {
-    if (sortedCandidates.length > 1) {
-      setVisibleRows(new Set());
-      
-      sortedCandidates.forEach((candidate, index) => {
-        setTimeout(() => {
-          setVisibleRows(prev => new Set([...prev, candidate.id]));
-        }, index * 200 + 500); // Start after cards begin appearing
-      });
+    if (skipAnimation || sortedCandidates.length <= 1) {
+      setVisibleRows(new Set(sortedCandidates.map(c => c.id)));
+      return;
     }
-  }, [interviewNotesAnalyses, candidates]);
+    
+    setVisibleRows(new Set());
+    
+    sortedCandidates.forEach((candidate, index) => {
+      setTimeout(() => {
+        setVisibleRows(prev => new Set([...prev, candidate.id]));
+      }, index * 200 + 500); // Start after cards begin appearing
+    });
+  }, [interviewNotesAnalyses, candidates, skipAnimation, sortedCandidates]);
 
   // Generate plain text format for copying
   const generatePlainText = useCallback((candidate: Candidate, analysis: InterviewNotesAnalysis): string => {
@@ -520,7 +543,7 @@ export function RecommendationsView() {
 
   return (
     <div className="space-y-6">
-      <div className="animate-fade-in">
+      <div>
         <h3 className="text-lg font-semibold text-gray-900 mb-1">
           Candidate Recommendations
         </h3>
@@ -554,10 +577,11 @@ export function RecommendationsView() {
 
           return (
             <AnimatedCard
-              key={`${candidate.id}-${animationKey}`}
-              delay={cardIndex * 150}
+              key={candidate.id}
+              delay={skipAnimation ? 0 : cardIndex * 150}
               duration={500}
               className="overflow-hidden"
+              skipAnimation={skipAnimation}
             >
               <div
                 ref={(el) => {
@@ -643,7 +667,8 @@ export function RecommendationsView() {
                         <TypewriterParagraph
                           text={analysis.synopsis}
                           speed={200}
-                          delay={cardIndex * 150 + 600}
+                          delay={skipAnimation ? 0 : cardIndex * 150 + 600}
+                          skipAnimation={skipAnimation}
                         />
                       ) : (
                         "No synopsis available."
@@ -654,7 +679,7 @@ export function RecommendationsView() {
                   {/* Matches and Gaps Grid */}
                   <div className="grid gap-4 md:grid-cols-2 mb-4">
                     {/* Strengths */}
-                    <div className="p-4 bg-success-light/50 rounded-apple animate-fade-in-up" style={{ animationDelay: `${cardIndex * 150 + 300}ms` }}>
+                    <div className={`p-4 bg-success-light/50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 300}ms` }}>
                       <div className="flex items-center gap-2 mb-3">
                         <CheckCircle2 className="h-4 w-4 text-success" />
                         <span className="text-sm font-medium text-success">
@@ -665,15 +690,16 @@ export function RecommendationsView() {
                         items={strengths}
                         speed={100}
                         staggerDelay={150}
-                        initialDelay={cardIndex * 150 + 800}
+                        initialDelay={skipAnimation ? 0 : cardIndex * 150 + 800}
                         className="space-y-1.5"
                         itemClassName="text-xs text-gray-600"
                         renderBullet={() => <span className="text-success mt-0.5">•</span>}
+                        skipAnimation={skipAnimation}
                       />
                     </div>
 
                     {/* Concerns */}
-                    <div className="p-4 bg-danger-light/50 rounded-apple animate-fade-in-up" style={{ animationDelay: `${cardIndex * 150 + 400}ms` }}>
+                    <div className={`p-4 bg-danger-light/50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 400}ms` }}>
                       <div className="flex items-center gap-2 mb-3">
                         <XCircle className="h-4 w-4 text-danger" />
                         <span className="text-sm font-medium text-danger">
@@ -684,17 +710,18 @@ export function RecommendationsView() {
                         items={concerns}
                         speed={100}
                         staggerDelay={150}
-                        initialDelay={cardIndex * 150 + 1000}
+                        initialDelay={skipAnimation ? 0 : cardIndex * 150 + 1000}
                         className="space-y-1.5"
                         itemClassName="text-xs text-gray-600"
                         renderBullet={() => <span className="text-danger mt-0.5">•</span>}
+                        skipAnimation={skipAnimation}
                       />
                     </div>
                   </div>
 
                   {/* Next Steps */}
                   {analysis.nextSteps && analysis.nextSteps.length > 0 && (
-                    <div className="p-3 bg-gray-50 rounded-apple animate-fade-in-up" style={{ animationDelay: `${cardIndex * 150 + 500}ms` }}>
+                    <div className={`p-3 bg-gray-50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 500}ms` }}>
                       <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
                         Suggested Next Steps
                       </h5>
@@ -702,10 +729,11 @@ export function RecommendationsView() {
                         items={analysis.nextSteps}
                         speed={100}
                         staggerDelay={120}
-                        initialDelay={cardIndex * 150 + 1200}
+                        initialDelay={skipAnimation ? 0 : cardIndex * 150 + 1200}
                         className="space-y-1"
                         itemClassName="text-xs text-gray-600"
                         renderBullet={() => <ArrowRight className="h-3 w-3 mt-0.5 text-primary flex-shrink-0" />}
+                        skipAnimation={skipAnimation}
                       />
                     </div>
                   )}
@@ -718,7 +746,7 @@ export function RecommendationsView() {
 
       {/* Comparison Table */}
       {sortedCandidates.length > 1 && (
-        <div className="space-y-4 animate-fade-in" style={{ animationDelay: "300ms" }}>
+        <div className={`space-y-4 ${skipAnimation ? '' : 'animate-fade-in'}`} style={{ animationDelay: skipAnimation ? "0ms" : "300ms" }}>
           <div className="flex items-center justify-between">
             <h4 className="text-base font-semibold text-gray-900">
               Candidate Comparison
@@ -754,7 +782,7 @@ export function RecommendationsView() {
             </div>
           </div>
 
-          <Card className="overflow-hidden animate-scale-in" ref={comparisonTableRef} style={{ animationDelay: "400ms" }}>
+          <Card className={`overflow-hidden ${skipAnimation ? '' : 'animate-scale-in'}`} ref={comparisonTableRef} style={{ animationDelay: skipAnimation ? "0ms" : "400ms" }}>
             <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto" data-scroll-container>
               <table className="w-full">
                 <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
@@ -791,8 +819,8 @@ export function RecommendationsView() {
 
                     return (
                       <tr
-                        key={`${candidate.id}-table-${animationKey}`}
-                        className={`hover:bg-gray-50 transition-all duration-300 ${
+                        key={candidate.id}
+                        className={`hover:bg-gray-50 ${skipAnimation ? '' : 'transition-all duration-300'} ${
                           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
                         }`}
                       >
@@ -809,9 +837,9 @@ export function RecommendationsView() {
                         </td>
                         <td className="px-4 py-4 text-center">
                           {comparison ? (
-                            <div className={`inline-flex items-center justify-center transition-opacity duration-500 ${
+                            <div className={`inline-flex items-center justify-center ${skipAnimation ? '' : 'transition-opacity duration-500'} ${
                               isVisible ? "opacity-100" : "opacity-0"
-                            }`} style={{ transitionDelay: isVisible ? "200ms" : "0ms" }}>
+                            }`} style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? "200ms" : "0ms") }}>
                               <div className="relative w-10 h-10">
                                 <svg className="w-10 h-10 transform -rotate-90">
                                   <circle
@@ -830,9 +858,9 @@ export function RecommendationsView() {
                                     stroke="currentColor"
                                     strokeWidth="3"
                                     fill="none"
-                                    strokeDasharray={isVisible ? `${comparison.jdMatchPercent * 1.005} 100.5` : "0 100.5"}
-                                    className="text-primary transition-all duration-1000"
-                                    style={{ transitionDelay: isVisible ? `${rowIndex * 200 + 300}ms` : "0ms" }}
+                                    strokeDasharray={isVisible || skipAnimation ? `${comparison.jdMatchPercent * 1.005} 100.5` : "0 100.5"}
+                                    className={`text-primary ${skipAnimation ? '' : 'transition-all duration-1000'}`}
+                                    style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${rowIndex * 200 + 300}ms` : "0ms") }}
                                   />
                                 </svg>
                                 <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
@@ -854,10 +882,10 @@ export function RecommendationsView() {
                             {analysis.interviewMatches?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
-                                className={`flex items-start gap-1 text-xs text-gray-600 transition-opacity duration-200 ${
+                                className={`flex items-start gap-1 text-xs text-gray-600 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
                                   isVisible ? "opacity-100" : "opacity-0"
                                 }`}
-                                style={{ transitionDelay: isVisible ? `${i * 50 + 100}ms` : "0ms" }}
+                                style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${i * 50 + 100}ms` : "0ms") }}
                               >
                                 <CheckCircle2 className="h-3 w-3 mt-0.5 text-success flex-shrink-0" />
                                 <span>{renderInlineMarkdown(item)}</span>
@@ -870,10 +898,10 @@ export function RecommendationsView() {
                             {analysis.interviewGaps?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
-                                className={`flex items-start gap-1 text-xs text-gray-600 transition-opacity duration-200 ${
+                                className={`flex items-start gap-1 text-xs text-gray-600 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
                                   isVisible ? "opacity-100" : "opacity-0"
                                 }`}
-                                style={{ transitionDelay: isVisible ? `${i * 50 + 100}ms` : "0ms" }}
+                                style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${i * 50 + 100}ms` : "0ms") }}
                               >
                                 <XCircle className="h-3 w-3 mt-0.5 text-danger flex-shrink-0" />
                                 <span>{renderInlineMarkdown(item)}</span>
@@ -882,9 +910,9 @@ export function RecommendationsView() {
                           </ul>
                         </td>
                         <td className="px-4 py-4 text-center">
-                          <div className={`transition-all duration-300 ${
+                          <div className={`${skipAnimation ? '' : 'transition-all duration-300'} ${
                             isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
-                          }`} style={{ transitionDelay: isVisible ? "300ms" : "0ms" }}>
+                          }`} style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? "300ms" : "0ms") }}>
                             <Badge
                               variant={analysis.recommendation as RecommendationLevel}
                             >

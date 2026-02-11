@@ -68,6 +68,13 @@ const initialState: AppState = {
   activeTab: "summary",
 };
 
+// Track which items have already been animated (outside of Zustand for performance)
+const animatedItems = new Set<string>();
+
+export const hasBeenAnimated = (key: string): boolean => animatedItems.has(key);
+export const markAsAnimated = (key: string): void => { animatedItems.add(key); };
+export const clearAnimatedItems = (): void => { animatedItems.clear(); };
+
 export const useAppStore = create<AppStore>((set, get) => ({
   ...initialState,
 
@@ -196,5 +203,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
   setActiveTab: (tab) => set({ activeTab: tab }),
 
   // Reset
-  resetAll: () => set(initialState),
+  resetAll: () => {
+    clearAnimatedItems();
+    set(initialState);
+  },
 }));

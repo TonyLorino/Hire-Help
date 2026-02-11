@@ -47,7 +47,7 @@ export function Header() {
               variant="ghost"
               size="sm"
               onClick={resetAll}
-              className="text-gray-500 hover:text-gray-700"
+              className="text-gray-500 hover:text-red-500 hover:bg-red-50"
             >
               <RotateCcw className="mr-2 h-4 w-4" />
               Start Over

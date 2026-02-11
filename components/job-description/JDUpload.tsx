@@ -108,7 +108,7 @@ export function JDUpload() {
   };
 
   return (
-    <Card className="border-dashed border-2 border-gray-200 bg-gray-50/50">
+    <Card className="border-dashed border-2 border-primary/30 bg-gray-50/50 ring-2 ring-primary/20 ring-offset-2 animate-highlight-pulse">
       <CardContent className="p-4">
         <div
           className={cn(
@@ -137,7 +137,7 @@ export function JDUpload() {
               </>
             ) : (
               <>
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3">
+                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3 transition-transform hover:scale-105">
                   <FileText className="h-6 w-6" />
                 </div>
                 <p className="text-sm font-medium text-gray-700">
@@ -146,8 +146,11 @@ export function JDUpload() {
                 <p className="text-xs text-gray-500 mt-1">
                   PDF, Word, or text file
                 </p>
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Drag and drop or click to select
+                </p>
                 <Button
-                  variant="outline"
+                  variant="default"
                   size="sm"
                   onClick={() => fileInputRef.current?.click()}
                   className="mt-3"

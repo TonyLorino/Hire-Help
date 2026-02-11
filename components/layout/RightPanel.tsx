@@ -1,5 +1,6 @@
 "use client";
 
+import { ArrowLeft, Sparkles, ChevronRight } from "lucide-react";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CandidateSummary } from "@/components/analysis/CandidateSummary";
 import { JDMatchTable } from "@/components/analysis/JDMatchTable";
@@ -24,11 +25,42 @@ export function RightPanel() {
   if (!jobDescription) {
     return (
       <div className="flex h-full items-center justify-center bg-gray-50/50 p-8">
-        <EmptyState
-          title="Get Started"
-          description="Upload a job description to begin analyzing candidates"
-          icon="file-text"
-        />
+        <div className="text-center max-w-md">
+          {/* Step indicator */}
+          <div className="mb-6">
+            <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
+              Step 1 of 3
+            </span>
+          </div>
+
+          {/* Arrow pointing to left panel */}
+          <div className="flex items-center justify-center gap-2 mb-6 animate-point-left">
+            <ArrowLeft className="h-5 w-5 text-primary" />
+            <span className="text-sm text-primary font-medium">Upload in the left panel</span>
+          </div>
+
+          {/* Icon */}
+          <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-primary/10 text-primary mb-4">
+            <Sparkles className="h-8 w-8" />
+          </div>
+
+          <h3 className="text-xl font-semibold text-gray-900 mb-3">
+            Welcome to Hire Help
+          </h3>
+          <p className="text-sm text-gray-600 mb-4">
+            Your AI-powered hiring assistant. Start by uploading a job description, 
+            then add candidate resumes to get instant analysis and recommendations.
+          </p>
+
+          {/* Quick workflow overview */}
+          <div className="flex items-center justify-center gap-2 text-xs text-gray-400 mt-6">
+            <span className="font-medium text-primary">Upload JD</span>
+            <ChevronRight className="h-3 w-3" />
+            <span>Add Resumes</span>
+            <ChevronRight className="h-3 w-3" />
+            <span>Get Analysis</span>
+          </div>
+        </div>
       </div>
     );
   }
@@ -41,11 +73,42 @@ export function RightPanel() {
           {jdAnalysis ? (
             <JDAnalysisCard />
           ) : (
-            <EmptyState
-              title="Job Description Loaded"
-              description="Click 'Recommend Updates' to analyze the job description, or upload resumes to begin candidate analysis"
-              icon="search"
-            />
+            <div className="text-center py-12 max-w-md mx-auto">
+              {/* Step indicator */}
+              <div className="mb-6">
+                <span className="text-xs font-medium text-primary bg-primary/10 px-3 py-1 rounded-full">
+                  Step 2 of 3
+                </span>
+              </div>
+
+              {/* Arrow pointing to resume upload */}
+              <div className="flex items-center justify-center gap-2 mb-6 animate-point-left">
+                <ArrowLeft className="h-5 w-5 text-primary" />
+                <span className="text-sm text-primary font-medium">Add resumes below</span>
+              </div>
+
+              {/* Icon */}
+              <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-success/10 text-success mb-4">
+                <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">
+                Job Description Loaded
+              </h3>
+              <p className="text-sm text-gray-500 mb-4">
+                Great! Now upload candidate resumes to begin analysis. You can also 
+                click &ldquo;Recommend Updates&rdquo; in the JD preview to get AI suggestions for 
+                improving your job description.
+              </p>
+
+              {/* Next step hint */}
+              <div className="p-3 bg-gray-50 rounded-lg text-xs text-gray-500">
+                <strong className="text-gray-700">Next:</strong> Upload one or more resumes (PDF, Word, or text) 
+                to see how candidates match your job requirements.
+              </div>
+            </div>
           )}
         </div>
       </div>

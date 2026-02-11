@@ -173,6 +173,43 @@ button, a, input, textarea, select {
   }
 }
 
+/* Guidance animation keyframes */
+@keyframes point-left {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(-6px);
+  }
+}
+
+@keyframes point-right {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  50% {
+    transform: translateX(6px);
+  }
+}
+
+@keyframes highlight-pulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(0, 122, 255, 0.2);
+  }
+  50% {
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+  }
+}
+
+@keyframes subtle-bounce {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-3px);
+  }
+}
+
 /* Animation utility classes */
 .animate-draw-border {
   animation: draw-border 0.6s ease-out forwards;
@@ -211,6 +248,23 @@ button, a, input, textarea, select {
 
 .animate-blink {
   animation: blink 0.8s step-end infinite;
+}
+
+/* Guidance animation utility classes */
+.animate-point-left {
+  animation: point-left 1.5s ease-in-out infinite;
+}
+
+.animate-point-right {
+  animation: point-right 1.5s ease-in-out infinite;
+}
+
+.animate-highlight-pulse {
+  animation: highlight-pulse 2s ease-in-out infinite;
+}
+
+.animate-subtle-bounce {
+  animation: subtle-bounce 2s ease-in-out infinite;
 }
 
 /* Staggered animation delays */

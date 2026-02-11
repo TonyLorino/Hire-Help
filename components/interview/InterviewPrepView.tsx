@@ -1,11 +1,11 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useRef, useEffect } from "react";
 import { Download, FileText, User, CheckCircle2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
-import { useAppStore } from "@/store/app-store";
+import { useAppStore, hasBeenAnimated, markAsAnimated } from "@/store/app-store";
 import { QuestionsTable } from "./QuestionsTable";
 import { AnimatedCard, AnimatedCardSkeleton } from "@/components/ui/animated-card";
 import { TypewriterParagraph } from "@/components/ui/typewriter-text";
@@ -15,6 +15,7 @@ export function InterviewPrepView() {
   const [selectedCandidateId, setSelectedCandidateId] = useState<string | null>(
     null
   );
+  const [justGenerated, setJustGenerated] = useState<string | null>(null);
 
   const candidates = useAppStore((state) => state.candidates);
   const interviewPreps = useAppStore((state) => state.interviewPreps);
@@ -28,6 +29,7 @@ export function InterviewPrepView() {
 
     setIsLoading(true);
     setSelectedCandidateId(candidateId);
+    setJustGenerated(null);
 
     try {
       const jdMatch = analysisResults?.jdMatches?.find(
@@ -52,6 +54,7 @@ export function InterviewPrepView() {
 
       const prep = await response.json();
       setInterviewPrep(candidateId, prep);
+      setJustGenerated(candidateId); // Mark as just generated to trigger animation
     } catch (error) {
       console.error("Interview prep error:", error);
     } finally {
@@ -112,6 +115,21 @@ export function InterviewPrepView() {
     ? interviewPreps.get(selectedCandidateId)
     : null;
 
+  // Determine if we should animate - only animate if just generated
+  const animationKey = selectedCandidateId ? `prep-${selectedCandidateId}` : '';
+  const shouldAnimate = justGenerated === selectedCandidateId && !hasBeenAnimated(animationKey);
+
+  // Mark as animated after showing
+  useEffect(() => {
+    if (currentPrep && selectedCandidateId && shouldAnimate) {
+      const timer = setTimeout(() => {
+        markAsAnimated(animationKey);
+        setJustGenerated(null);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [currentPrep, selectedCandidateId, shouldAnimate, animationKey]);
+
   if (candidates.length === 0) {
     return (
       <div className="text-center py-12 text-gray-500">
@@ -122,13 +140,13 @@ export function InterviewPrepView() {
 
   return (
     <div className="space-y-6">
-      <h3 className="text-lg font-semibold text-gray-900 animate-fade-in">
+      <h3 className="text-lg font-semibold text-gray-900">
         Interview Preparation
       </h3>
 
       {/* Candidate Selection */}
       <div className="flex flex-wrap gap-2">
-        {candidates.map((candidate, index) => {
+        {candidates.map((candidate) => {
           const hasPrep = interviewPreps.has(candidate.id);
           return (
             <Button
@@ -142,8 +160,6 @@ export function InterviewPrepView() {
                 }
               }}
               disabled={isLoading && selectedCandidateId === candidate.id}
-              className="animate-fade-in-up"
-              style={{ animationDelay: `${index * 50}ms` }}
             >
               {isLoading && selectedCandidateId === candidate.id ? (
                 <Spinner size="sm" className="mr-2" />
@@ -162,7 +178,7 @@ export function InterviewPrepView() {
       {currentPrep && (
         <div className="space-y-6">
           {/* Export Buttons */}
-          <div className="flex gap-2 justify-end animate-fade-in">
+          <div className="flex gap-2 justify-end">
             <Button variant="outline" size="sm" onClick={() => handleExport("pdf")}>
               <Download className="h-4 w-4 mr-2" />
               Export PDF
@@ -174,7 +190,7 @@ export function InterviewPrepView() {
           </div>
 
           {/* Summary Card with animation */}
-          <AnimatedCard delay={0} duration={500}>
+          <AnimatedCard delay={0} duration={500} skipAnimation={!shouldAnimate}>
             <CardHeader>
               <CardTitle className="text-base">
                 {currentPrep.candidateName}
@@ -185,12 +201,13 @@ export function InterviewPrepView() {
                 <TypewriterParagraph
                   text={currentPrep.summary}
                   speed={200}
-                  delay={500}
+                  delay={shouldAnimate ? 500 : 0}
+                  skipAnimation={!shouldAnimate}
                 />
               </div>
 
               <div className="grid gap-4 md:grid-cols-2">
-                <div className="p-4 bg-success-light rounded-apple animate-fade-in-up" style={{ animationDelay: "300ms" }}>
+                <div className={`p-4 bg-success-light rounded-apple ${shouldAnimate ? 'animate-fade-in-up' : ''}`} style={{ animationDelay: shouldAnimate ? "300ms" : "0ms" }}>
                   <div className="flex items-center gap-2 mb-2">
                     <CheckCircle2 className="h-4 w-4 text-success" />
                     <span className="text-sm font-medium text-success">
@@ -201,12 +218,13 @@ export function InterviewPrepView() {
                     <TypewriterParagraph
                       text={currentPrep.matchOverview}
                       speed={180}
-                      delay={800}
+                      delay={shouldAnimate ? 800 : 0}
+                      skipAnimation={!shouldAnimate}
                     />
                   </div>
                 </div>
 
-                <div className="p-4 bg-warning-light rounded-apple animate-fade-in-up" style={{ animationDelay: "400ms" }}>
+                <div className={`p-4 bg-warning-light rounded-apple ${shouldAnimate ? 'animate-fade-in-up' : ''}`} style={{ animationDelay: shouldAnimate ? "400ms" : "0ms" }}>
                   <div className="flex items-center gap-2 mb-2">
                     <AlertCircle className="h-4 w-4 text-warning" />
                     <span className="text-sm font-medium text-warning">
@@ -217,7 +235,8 @@ export function InterviewPrepView() {
                     <TypewriterParagraph
                       text={currentPrep.gapOverview}
                       speed={180}
-                      delay={1000}
+                      delay={shouldAnimate ? 1000 : 0}
+                      skipAnimation={!shouldAnimate}
                     />
                   </div>
                 </div>
@@ -226,8 +245,8 @@ export function InterviewPrepView() {
           </AnimatedCard>
 
           {/* Questions Table with animation */}
-          <div className="animate-scale-in" style={{ animationDelay: "200ms" }}>
-            <QuestionsTable questions={currentPrep.questions} />
+          <div className={shouldAnimate ? 'animate-scale-in' : ''} style={{ animationDelay: shouldAnimate ? "200ms" : "0ms" }}>
+            <QuestionsTable questions={currentPrep.questions} candidateId={selectedCandidateId || undefined} isNewData={shouldAnimate} />
           </div>
         </div>
       )}

@@ -136,12 +136,17 @@ export function ResumeUpload() {
     setIsDragging(false);
   };
 
+  // Determine if this is the active step (JD loaded, no candidates)
+  const isActiveStep = jobDescription && candidates.length === 0;
+
   return (
     <Card
       className={cn(
-        "border-dashed border-2 transition-colors",
+        "border-dashed border-2 transition-all duration-300",
         isDragging
           ? "border-primary bg-primary/5"
+          : isActiveStep
+          ? "border-primary/30 bg-gray-50/50 ring-2 ring-primary/20 ring-offset-2 animate-highlight-pulse"
           : "border-gray-200 bg-gray-50/50",
         !jobDescription && "opacity-50"
       )}
@@ -176,7 +181,12 @@ export function ResumeUpload() {
             </div>
           ) : (
             <>
-              <div className="flex h-12 w-12 mx-auto items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-3">
+              <div className={cn(
+                "flex h-12 w-12 mx-auto items-center justify-center rounded-full mb-3 transition-transform",
+                isActiveStep 
+                  ? "bg-primary/10 text-primary hover:scale-105" 
+                  : "bg-gray-100 text-gray-400"
+              )}>
                 <FileUp className="h-6 w-6" />
               </div>
               <p className="text-sm font-medium text-gray-700">
@@ -184,14 +194,25 @@ export function ResumeUpload() {
                   ? "Upload candidate resumes"
                   : "Upload a job description first"}
               </p>
-              <p className="text-xs text-gray-500 mt-1 mb-4">
+              <p className="text-xs text-gray-500 mt-1">
                 PDF, Word, or text files
               </p>
+              {!jobDescription && (
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Complete step 1 above to continue
+                </p>
+              )}
+              {isActiveStep && (
+                <p className="text-[10px] text-gray-400 mt-2">
+                  Drag and drop or click to select multiple files
+                </p>
+              )}
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!jobDescription}
-                variant="outline"
+                variant={isActiveStep ? "default" : "outline"}
                 size="sm"
+                className="mt-4"
               >
                 <Upload className="mr-2 h-4 w-4" />
                 Select Files

@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { CheckCircle2, XCircle } from "lucide-react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { useAppStore } from "@/store/app-store";
+import { useAppStore, hasBeenAnimated, markAsAnimated } from "@/store/app-store";
 import { TypewriterText } from "@/components/ui/typewriter-text";
 import type { RankingLevel } from "@/types";
 
@@ -13,22 +13,41 @@ export function JDMatchTable() {
   const candidates = useAppStore((state) => state.candidates);
   const jobInfo = useAppStore((state) => state.jobInfo);
   const [visibleRows, setVisibleRows] = useState<Set<string>>(new Set());
-  const [animationKey, setAnimationKey] = useState(0);
+  const initializedRef = useRef(false);
+  
+  // Check if this table has already been animated
+  const tableKey = analysisResults?.jdMatches?.map(m => m.candidateId).join('-') || '';
+  const skipAnimation = hasBeenAnimated(`jdmatch-${tableKey}`);
 
-  // Reset animation when results change
+  // Initialize visibility and handle animation
   useEffect(() => {
-    if (analysisResults?.jdMatches) {
-      setVisibleRows(new Set());
-      setAnimationKey(prev => prev + 1);
-      
-      // Stagger row visibility
-      analysisResults.jdMatches.forEach((match, index) => {
-        setTimeout(() => {
-          setVisibleRows(prev => new Set([...prev, match.candidateId]));
-        }, index * 150);
-      });
+    if (!analysisResults?.jdMatches) return;
+    
+    // If already animated, show all immediately
+    if (skipAnimation) {
+      setVisibleRows(new Set(analysisResults.jdMatches.map(m => m.candidateId)));
+      return;
     }
-  }, [analysisResults?.jdMatches]);
+    
+    // Prevent re-animation on re-renders within the same session
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    
+    setVisibleRows(new Set());
+    
+    // Stagger row visibility
+    analysisResults.jdMatches.forEach((match, index) => {
+      setTimeout(() => {
+        setVisibleRows(prev => new Set([...prev, match.candidateId]));
+      }, index * 150);
+    });
+    
+    // Mark as animated after all rows are visible
+    const totalDelay = analysisResults.jdMatches.length * 150 + 500;
+    setTimeout(() => {
+      markAsAnimated(`jdmatch-${tableKey}`);
+    }, totalDelay);
+  }, [analysisResults?.jdMatches, skipAnimation, tableKey]);
 
   if (!analysisResults?.jdMatches?.length) {
     return (
@@ -50,12 +69,12 @@ export function JDMatchTable() {
 
   return (
     <div className="space-y-4">
-      <h3 className="text-lg font-semibold text-gray-900 animate-fade-in">
+      <h3 className={`text-lg font-semibold text-gray-900 ${skipAnimation ? '' : 'animate-fade-in'}`}>
         {tableTitle}
       </h3>
 
       {/* Table with draw animation */}
-      <Card className="overflow-hidden animate-scale-in">
+      <Card className={`overflow-hidden ${skipAnimation ? '' : 'animate-scale-in'}`}>
         <div className="max-h-[calc(100vh-350px)] min-h-[300px] overflow-auto">
           <table className="w-full">
             <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
@@ -81,8 +100,8 @@ export function JDMatchTable() {
                 
                 return (
                 <tr
-                  key={`${match.candidateId}-${animationKey}`}
-                  className={`hover:bg-gray-50 transition-all duration-300 ${
+                  key={match.candidateId}
+                  className={`hover:bg-gray-50 ${skipAnimation ? '' : 'transition-all duration-300'} ${
                     isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
                   }`}
                 >
@@ -96,21 +115,18 @@ export function JDMatchTable() {
                       {match.goodMatches.map((item, i) => (
                         <li
                           key={i}
-                          className={`flex items-start gap-2 text-sm text-gray-600 transition-opacity duration-200 ${
+                          className={`flex items-start gap-2 text-sm text-gray-600 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
                             isVisible ? "opacity-100" : "opacity-0"
                           }`}
-                          style={{ transitionDelay: isVisible ? `${i * 50}ms` : "0ms" }}
+                          style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${i * 50}ms` : "0ms") }}
                         >
                           <CheckCircle2 className="h-4 w-4 text-success flex-shrink-0 mt-0.5" />
-                          {isVisible ? (
-                            <TypewriterText
-                              text={item}
-                              speed={150}
-                              delay={rowIndex * 150 + i * 100 + 200}
-                            />
-                          ) : (
-                            <span>{item}</span>
-                          )}
+                          <TypewriterText
+                            text={item}
+                            speed={150}
+                            delay={skipAnimation ? 0 : rowIndex * 150 + i * 100 + 200}
+                            skipAnimation={skipAnimation}
+                          />
                         </li>
                       ))}
                     </ul>
@@ -120,29 +136,26 @@ export function JDMatchTable() {
                       {match.gaps.map((item, i) => (
                         <li
                           key={i}
-                          className={`flex items-start gap-2 text-sm text-gray-600 transition-opacity duration-200 ${
+                          className={`flex items-start gap-2 text-sm text-gray-600 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
                             isVisible ? "opacity-100" : "opacity-0"
                           }`}
-                          style={{ transitionDelay: isVisible ? `${i * 50}ms` : "0ms" }}
+                          style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${i * 50}ms` : "0ms") }}
                         >
                           <XCircle className="h-4 w-4 text-danger flex-shrink-0 mt-0.5" />
-                          {isVisible ? (
-                            <TypewriterText
-                              text={item}
-                              speed={150}
-                              delay={rowIndex * 150 + i * 100 + 200}
-                            />
-                          ) : (
-                            <span>{item}</span>
-                          )}
+                          <TypewriterText
+                            text={item}
+                            speed={150}
+                            delay={skipAnimation ? 0 : rowIndex * 150 + i * 100 + 200}
+                            skipAnimation={skipAnimation}
+                          />
                         </li>
                       ))}
                     </ul>
                   </td>
                   <td className="px-4 py-4 text-center">
-                    <div className={`transition-all duration-300 ${
+                    <div className={`${skipAnimation ? '' : 'transition-all duration-300'} ${
                       isVisible ? "opacity-100 scale-100" : "opacity-0 scale-75"
-                    }`} style={{ transitionDelay: isVisible ? "300ms" : "0ms" }}>
+                    }`} style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? "300ms" : "0ms") }}>
                       <Badge variant={match.ranking as RankingLevel}>
                         {match.ranking.charAt(0).toUpperCase() +
                           match.ranking.slice(1)}

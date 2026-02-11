@@ -9,6 +9,7 @@ interface AnimatedCardProps {
   delay?: number; // Delay in ms before animation starts
   duration?: number; // Duration of border draw in ms
   onAnimationComplete?: () => void;
+  skipAnimation?: boolean; // Skip animation entirely (for already-loaded content)
 }
 
 export function AnimatedCard({
@@ -17,13 +18,23 @@ export function AnimatedCard({
   delay = 0,
   duration = 600,
   onAnimationComplete,
+  skipAnimation = false,
 }: AnimatedCardProps) {
   const [isDrawing, setIsDrawing] = useState(false);
-  const [isContentVisible, setIsContentVisible] = useState(false);
+  const [isContentVisible, setIsContentVisible] = useState(skipAnimation);
+  const [isBorderHidden, setIsBorderHidden] = useState(skipAnimation);
   const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    // If skipping animation, don't run any timers
+    if (skipAnimation) {
+      setIsContentVisible(true);
+      setIsBorderHidden(true);
+      onAnimationComplete?.();
+      return;
+    }
+
     // Measure the container
     if (containerRef.current) {
       const rect = containerRef.current.getBoundingClientRect();
@@ -41,11 +52,17 @@ export function AnimatedCard({
       onAnimationComplete?.();
     }, delay + duration);
 
+    // Hide border after content is visible (fade out the border)
+    const hideBorderTimer = setTimeout(() => {
+      setIsBorderHidden(true);
+    }, delay + duration + 300);
+
     return () => {
       clearTimeout(drawTimer);
       clearTimeout(contentTimer);
+      clearTimeout(hideBorderTimer);
     };
-  }, [delay, duration, onAnimationComplete]);
+  }, [delay, duration, onAnimationComplete, skipAnimation]);
 
   // Calculate perimeter for stroke-dasharray
   const perimeter = 2 * (dimensions.width + dimensions.height);
@@ -59,37 +76,40 @@ export function AnimatedCard({
         className
       )}
     >
-      {/* SVG Border Animation */}
-      <svg
-        className="absolute inset-0 w-full h-full pointer-events-none"
-        style={{ zIndex: 10 }}
-      >
-        <rect
-          x="1"
-          y="1"
-          width={dimensions.width ? dimensions.width - 2 : "100%"}
-          height={dimensions.height ? dimensions.height - 2 : "100%"}
-          rx={cornerRadius}
-          ry={cornerRadius}
-          fill="none"
-          stroke="currentColor"
-          strokeWidth="2"
+      {/* SVG Border Animation - hidden after animation completes */}
+      {!isBorderHidden && (
+        <svg
           className={cn(
-            "text-primary/60",
-            isDrawing ? "animate-draw-border" : "opacity-0"
+            "absolute inset-0 w-full h-full pointer-events-none transition-opacity duration-300",
+            isContentVisible ? "opacity-0" : "opacity-100"
           )}
-          style={{
-            strokeDasharray: perimeter,
-            strokeDashoffset: isDrawing ? 0 : perimeter,
-            transition: isDrawing ? `stroke-dashoffset ${duration}ms ease-out` : "none",
-          }}
-        />
-      </svg>
+          style={{ zIndex: 10 }}
+        >
+          <rect
+            x="1"
+            y="1"
+            width={dimensions.width ? dimensions.width - 2 : "100%"}
+            height={dimensions.height ? dimensions.height - 2 : "100%"}
+            rx={cornerRadius}
+            ry={cornerRadius}
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2"
+            className="text-primary/60"
+            style={{
+              strokeDasharray: perimeter,
+              strokeDashoffset: isDrawing ? 0 : perimeter,
+              transition: isDrawing ? `stroke-dashoffset ${duration}ms ease-out` : "none",
+            }}
+          />
+        </svg>
+      )}
 
       {/* Content with fade-in */}
       <div
         className={cn(
-          "relative transition-all duration-300",
+          "relative",
+          skipAnimation ? "" : "transition-all duration-300",
           isContentVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
         )}
       >
@@ -99,7 +119,8 @@ export function AnimatedCard({
       {/* Subtle shadow that appears after animation */}
       <div
         className={cn(
-          "absolute inset-0 rounded-apple shadow-sm transition-opacity duration-500 pointer-events-none",
+          "absolute inset-0 rounded-apple shadow-sm pointer-events-none",
+          skipAnimation ? "opacity-100" : "transition-opacity duration-500",
           isContentVisible ? "opacity-100" : "opacity-0"
         )}
         style={{ zIndex: -1 }}

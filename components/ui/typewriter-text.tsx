@@ -3,6 +3,22 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { cn } from "@/lib/utils";
 
+// Render with basic inline markdown support (bold, italic)
+function renderWithMarkdown(content: string) {
+  // Split on **bold** and *italic* patterns
+  const parts = content.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
+    }
+    if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
+      return <em key={i}>{part.slice(1, -1)}</em>;
+    }
+    return <React.Fragment key={i}>{part}</React.Fragment>;
+  });
+}
+
 interface TypewriterTextProps {
   text: string;
   speed?: number; // Characters per second
@@ -10,7 +26,7 @@ interface TypewriterTextProps {
   className?: string;
   onComplete?: () => void;
   skipOnClick?: boolean;
-  renderMarkdown?: boolean;
+  skipAnimation?: boolean; // Skip animation entirely
 }
 
 export function TypewriterText({
@@ -20,10 +36,11 @@ export function TypewriterText({
   className,
   onComplete,
   skipOnClick = true,
+  skipAnimation = false,
 }: TypewriterTextProps) {
-  const [displayedText, setDisplayedText] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [displayedText, setDisplayedText] = useState(skipAnimation ? text : "");
+  const [isComplete, setIsComplete] = useState(skipAnimation);
+  const [hasStarted, setHasStarted] = useState(skipAnimation);
 
   const completeAnimation = useCallback(() => {
     setDisplayedText(text);
@@ -32,6 +49,14 @@ export function TypewriterText({
   }, [text, onComplete]);
 
   useEffect(() => {
+    if (skipAnimation) {
+      setDisplayedText(text);
+      setIsComplete(true);
+      setHasStarted(true);
+      onComplete?.();
+      return;
+    }
+
     // Reset when text changes
     setDisplayedText("");
     setIsComplete(false);
@@ -43,10 +68,10 @@ export function TypewriterText({
     }, delay);
 
     return () => clearTimeout(startTimer);
-  }, [text, delay]);
+  }, [text, delay, skipAnimation, onComplete]);
 
   useEffect(() => {
-    if (!hasStarted || isComplete) return;
+    if (skipAnimation || !hasStarted || isComplete) return;
 
     const interval = 1000 / speed;
     let currentIndex = 0;
@@ -65,28 +90,12 @@ export function TypewriterText({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [text, speed, hasStarted, isComplete, onComplete]);
+  }, [text, speed, hasStarted, isComplete, onComplete, skipAnimation]);
 
   const handleClick = () => {
     if (skipOnClick && !isComplete) {
       completeAnimation();
     }
-  };
-
-  // Render with basic inline markdown support (bold, italic)
-  const renderWithMarkdown = (content: string) => {
-    // Split on **bold** and *italic* patterns
-    const parts = content.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-    
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
-        return <em key={i}>{part.slice(1, -1)}</em>;
-      }
-      return <React.Fragment key={i}>{part}</React.Fragment>;
-    });
   };
 
   return (
@@ -110,6 +119,7 @@ interface TypewriterParagraphProps {
   delay?: number;
   className?: string;
   onComplete?: () => void;
+  skipAnimation?: boolean;
 }
 
 export function TypewriterParagraph({
@@ -118,12 +128,21 @@ export function TypewriterParagraph({
   delay = 0,
   className,
   onComplete,
+  skipAnimation = false,
 }: TypewriterParagraphProps) {
-  const [displayedText, setDisplayedText] = useState("");
-  const [isComplete, setIsComplete] = useState(false);
-  const [hasStarted, setHasStarted] = useState(false);
+  const [displayedText, setDisplayedText] = useState(skipAnimation ? text : "");
+  const [isComplete, setIsComplete] = useState(skipAnimation);
+  const [hasStarted, setHasStarted] = useState(skipAnimation);
 
   useEffect(() => {
+    if (skipAnimation) {
+      setDisplayedText(text);
+      setIsComplete(true);
+      setHasStarted(true);
+      onComplete?.();
+      return;
+    }
+
     setDisplayedText("");
     setIsComplete(false);
     setHasStarted(false);
@@ -133,10 +152,10 @@ export function TypewriterParagraph({
     }, delay);
 
     return () => clearTimeout(startTimer);
-  }, [text, delay]);
+  }, [text, delay, skipAnimation, onComplete]);
 
   useEffect(() => {
-    if (!hasStarted || isComplete) return;
+    if (skipAnimation || !hasStarted || isComplete) return;
 
     const interval = 1000 / speed;
     let currentIndex = 0;
@@ -154,7 +173,7 @@ export function TypewriterParagraph({
     }, interval);
 
     return () => clearInterval(timer);
-  }, [text, speed, hasStarted, isComplete, onComplete]);
+  }, [text, speed, hasStarted, isComplete, onComplete, skipAnimation]);
 
   const handleClick = () => {
     if (!isComplete) {
@@ -162,21 +181,6 @@ export function TypewriterParagraph({
       setIsComplete(true);
       onComplete?.();
     }
-  };
-
-  // Render with inline markdown
-  const renderWithMarkdown = (content: string) => {
-    const parts = content.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
-    
-    return parts.map((part, i) => {
-      if (part.startsWith('**') && part.endsWith('**')) {
-        return <strong key={i} className="font-semibold">{part.slice(2, -2)}</strong>;
-      }
-      if (part.startsWith('*') && part.endsWith('*') && !part.startsWith('**')) {
-        return <em key={i}>{part.slice(1, -1)}</em>;
-      }
-      return <React.Fragment key={i}>{part}</React.Fragment>;
-    });
   };
 
   return (
@@ -203,6 +207,7 @@ interface TypewriterListProps {
   bulletClassName?: string;
   itemClassName?: string;
   renderBullet?: (index: number) => React.ReactNode;
+  skipAnimation?: boolean;
 }
 
 export function TypewriterList({
@@ -214,20 +219,30 @@ export function TypewriterList({
   bulletClassName,
   itemClassName,
   renderBullet,
+  skipAnimation = false,
 }: TypewriterListProps) {
-  const [visibleItems, setVisibleItems] = useState<number[]>([]);
+  const [visibleItems, setVisibleItems] = useState<number[]>(
+    skipAnimation ? items.map((_, i) => i) : []
+  );
 
   useEffect(() => {
+    if (skipAnimation) {
+      setVisibleItems(items.map((_, i) => i));
+      return;
+    }
+
     setVisibleItems([]);
     
+    const timers: NodeJS.Timeout[] = [];
     items.forEach((_, index) => {
       const timer = setTimeout(() => {
         setVisibleItems(prev => [...prev, index]);
       }, initialDelay + index * staggerDelay);
-      
-      return () => clearTimeout(timer);
+      timers.push(timer);
     });
-  }, [items, initialDelay, staggerDelay]);
+    
+    return () => timers.forEach(t => clearTimeout(t));
+  }, [items, initialDelay, staggerDelay, skipAnimation]);
 
   return (
     <ul className={cn("space-y-1.5", className)}>
@@ -235,7 +250,8 @@ export function TypewriterList({
         <li
           key={index}
           className={cn(
-            "flex items-start gap-2 transition-opacity duration-200",
+            "flex items-start gap-2",
+            skipAnimation ? "opacity-100" : "transition-opacity duration-200",
             visibleItems.includes(index) ? "opacity-100" : "opacity-0"
           )}
         >
@@ -246,11 +262,15 @@ export function TypewriterList({
           )}
           <span className={itemClassName}>
             {visibleItems.includes(index) && (
-              <TypewriterText
-                text={item}
-                speed={speed}
-                delay={0}
-              />
+              skipAnimation ? (
+                renderWithMarkdown(item)
+              ) : (
+                <TypewriterText
+                  text={item}
+                  speed={speed}
+                  delay={0}
+                />
+              )
             )}
           </span>
         </li>
