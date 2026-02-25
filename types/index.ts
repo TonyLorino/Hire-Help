@@ -130,7 +130,7 @@ export interface JobDescriptionInfo {
   department: string | null;
 }
 
-export type ActiveTab = "summary" | "jd-match" | "comparison" | "interview" | "notes" | "recommendations";
+export type ActiveTab = "setup" | "summary" | "jd-match" | "comparison" | "interview" | "recommendations";
 
 export interface AppState {
   // Job Description
@@ -159,4 +159,5 @@ export interface AppState {
   isLoading: boolean;
   loadingMessage: string;
   activeTab: ActiveTab;
+  sidebarExpanded: boolean;
 }

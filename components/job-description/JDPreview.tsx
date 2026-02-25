@@ -51,7 +51,7 @@ export function JDPreview() {
               {jobInfo?.jobTitle || "Job Description"}
             </CardTitle>
             {(jobInfo?.company || jobInfo?.location) && (
-              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500">
+              <div className="flex items-center gap-3 mt-1 text-xs text-gray-500 dark:text-gray-400">
                 {jobInfo.company && (
                   <span className="flex items-center gap-1">
                     <Building2 className="h-3 w-3" />
@@ -71,7 +71,7 @@ export function JDPreview() {
             variant="ghost"
             size="sm"
             onClick={clearJobDescription}
-            className="text-gray-400 hover:text-danger flex-shrink-0"
+            className="text-gray-400 dark:text-gray-500 hover:text-danger flex-shrink-0"
           >
             <Trash2 className="h-4 w-4" />
           </Button>
@@ -80,7 +80,7 @@ export function JDPreview() {
       <CardContent className="space-y-4 overflow-hidden max-w-full">
         {/* JD Text Preview */}
         <div className="relative overflow-hidden max-w-full">
-          <p className="text-sm text-gray-600 whitespace-pre-wrap break-words overflow-hidden max-w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
+          <p className="text-sm text-gray-600 dark:text-gray-300 whitespace-pre-wrap break-words overflow-hidden max-w-full" style={{ wordBreak: 'break-word', overflowWrap: 'anywhere' }}>
             {displayText}
           </p>
           {jobDescription.length > 300 && (

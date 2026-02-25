@@ -18,9 +18,9 @@ const categoryLabels: Record<InterviewQuestion["category"], string> = {
 };
 
 const categoryColors: Record<InterviewQuestion["category"], string> = {
-  icebreaker: "bg-blue-50 text-blue-700",
-  "jd-specific": "bg-purple-50 text-purple-700",
-  "candidate-specific": "bg-orange-50 text-orange-700",
+  icebreaker: "bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400",
+  "jd-specific": "bg-purple-50 dark:bg-purple-900/30 text-purple-700 dark:text-purple-400",
+  "candidate-specific": "bg-orange-50 dark:bg-orange-900/30 text-orange-700 dark:text-orange-400",
 };
 
 const orderedCategories: InterviewQuestion["category"][] = [
@@ -81,28 +81,25 @@ export function QuestionsTable({ questions, candidateId, isNewData = false }: Qu
 
   return (
     <Card className={`overflow-hidden ${shouldAnimate ? 'animate-scale-in' : ''}`}>
-      <div className="max-h-[calc(100vh-350px)] min-h-[300px] overflow-auto">
+      <div className="min-h-[300px]">
         <table className="w-full">
-          <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
-            <tr className="border-b border-gray-200">
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[30%]">
+          <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_theme(colors.gray.200)] dark:shadow-[0_1px_0_0_theme(colors.gray.700)]">
+            <tr className="border-b border-gray-200 dark:border-gray-700">
+              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[10%]">
+                Type
+              </th>
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[35%]">
                 Question
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[25%]">
                 Why Ask This
               </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[20%]">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider w-[30%]">
                 What to Look For
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider w-[25%]">
-                Notes
-              </th>
-              <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider w-[5%]">
-                Type
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
             {orderedCategories.map((category) =>
               groupedQuestions[category]?.map((question) => {
                 const isVisible = visibleRows.has(question.id);
@@ -111,41 +108,10 @@ export function QuestionsTable({ questions, candidateId, isNewData = false }: Qu
                 return (
                   <tr
                     key={question.id}
-                    className={`hover:bg-gray-50 ${shouldAnimate ? 'transition-all duration-300' : ''} ${
+                    className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${shouldAnimate ? 'transition-all duration-300' : ''} ${
                       isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
                     }`}
                   >
-                    <td className="px-4 py-4 text-sm text-gray-900">
-                      <TypewriterText
-                        text={question.question}
-                        speed={100}
-                        delay={shouldAnimate ? globalIndex * 120 + 100 : 0}
-                        skipAnimation={!shouldAnimate}
-                      />
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">
-                      <TypewriterText
-                        text={question.reason}
-                        speed={120}
-                        delay={shouldAnimate ? globalIndex * 120 + 300 : 0}
-                        skipAnimation={!shouldAnimate}
-                      />
-                    </td>
-                    <td className="px-4 py-4 text-sm text-gray-600">
-                      <TypewriterText
-                        text={question.whatToLookFor}
-                        speed={120}
-                        delay={shouldAnimate ? globalIndex * 120 + 500 : 0}
-                        skipAnimation={!shouldAnimate}
-                      />
-                    </td>
-                    <td className="px-4 py-4">
-                      <div className={`min-h-[60px] border border-dashed border-gray-200 rounded-lg p-2 text-sm text-gray-400 ${shouldAnimate ? 'transition-opacity duration-300' : ''} ${
-                        isVisible ? "opacity-100" : "opacity-0"
-                      }`} style={{ transitionDelay: shouldAnimate && isVisible ? "400ms" : "0ms" }}>
-                        <span className="opacity-50">Space for notes...</span>
-                      </div>
-                    </td>
                     <td className="px-4 py-4 text-center">
                       <span
                         className={`inline-flex px-2 py-1 text-xs font-medium rounded-full ${shouldAnimate ? 'transition-all duration-300' : ''} ${categoryColors[category]} ${
@@ -155,6 +121,30 @@ export function QuestionsTable({ questions, candidateId, isNewData = false }: Qu
                       >
                         {categoryLabels[category]}
                       </span>
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-900 dark:text-gray-100">
+                      <TypewriterText
+                        text={question.question}
+                        speed={100}
+                        delay={shouldAnimate ? globalIndex * 120 + 100 : 0}
+                        skipAnimation={!shouldAnimate}
+                      />
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      <TypewriterText
+                        text={question.reason}
+                        speed={120}
+                        delay={shouldAnimate ? globalIndex * 120 + 300 : 0}
+                        skipAnimation={!shouldAnimate}
+                      />
+                    </td>
+                    <td className="px-4 py-4 text-sm text-gray-600 dark:text-gray-300">
+                      <TypewriterText
+                        text={question.whatToLookFor}
+                        speed={120}
+                        delay={shouldAnimate ? globalIndex * 120 + 500 : 0}
+                        skipAnimation={!shouldAnimate}
+                      />
                     </td>
                   </tr>
                 );

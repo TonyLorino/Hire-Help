@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
-import { Upload, FileUp, File } from "lucide-react";
+import { Upload, FileUp } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Spinner } from "@/components/ui/spinner";
@@ -136,19 +136,15 @@ export function ResumeUpload() {
     setIsDragging(false);
   };
 
-  // Determine if this is the active step (JD loaded, no candidates)
-  const isActiveStep = jobDescription && candidates.length === 0;
-
   return (
     <Card
       className={cn(
-        "border-dashed border-2 transition-all duration-300",
+        "border-dashed border-2 transition-all duration-300 bg-white dark:bg-gray-800",
         isDragging
           ? "border-primary bg-primary/5"
-          : isActiveStep
-          ? "border-primary/30 bg-gray-50/50 ring-2 ring-primary/20 ring-offset-2 animate-highlight-pulse"
-          : "border-gray-200 bg-gray-50/50",
-        !jobDescription && "opacity-50"
+          : jobDescription
+          ? "border-gray-200 dark:border-gray-600 hover:border-primary/50"
+          : "border-gray-200 dark:border-gray-600 opacity-50"
       )}
     >
       <CardContent className="p-4">
@@ -173,7 +169,7 @@ export function ResumeUpload() {
               <Spinner className="mx-auto" />
               <div className="space-y-1">
                 {uploadProgress.map((msg, i) => (
-                  <p key={i} className="text-sm text-gray-600">
+                  <p key={i} className="text-sm text-gray-600 dark:text-gray-300">
                     {msg}
                   </p>
                 ))}
@@ -183,34 +179,34 @@ export function ResumeUpload() {
             <>
               <div className={cn(
                 "flex h-12 w-12 mx-auto items-center justify-center rounded-full mb-3 transition-transform",
-                isActiveStep 
+                jobDescription 
                   ? "bg-primary/10 text-primary hover:scale-105" 
-                  : "bg-gray-100 text-gray-400"
+                  : "bg-gray-100 dark:bg-gray-700 text-gray-400 dark:text-gray-500"
               )}>
                 <FileUp className="h-6 w-6" />
               </div>
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
                 {jobDescription
                   ? "Upload candidate resumes"
                   : "Upload a job description first"}
               </p>
-              <p className="text-xs text-gray-500 mt-1">
+              <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                 PDF, Word, or text files
               </p>
               {!jobDescription && (
-                <p className="text-[10px] text-gray-400 mt-2">
-                  Complete step 1 above to continue
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
+                  Upload a job description on the left first
                 </p>
               )}
-              {isActiveStep && (
-                <p className="text-[10px] text-gray-400 mt-2">
+              {jobDescription && (
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
                   Drag and drop or click to select multiple files
                 </p>
               )}
               <Button
                 onClick={() => fileInputRef.current?.click()}
                 disabled={!jobDescription}
-                variant={isActiveStep ? "default" : "outline"}
+                variant={jobDescription ? "default" : "outline"}
                 size="sm"
                 className="mt-4"
               >

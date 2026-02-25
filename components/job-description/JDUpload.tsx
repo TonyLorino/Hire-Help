@@ -108,7 +108,7 @@ export function JDUpload() {
   };
 
   return (
-    <Card className="border-dashed border-2 border-primary/30 bg-gray-50/50 ring-2 ring-primary/20 ring-offset-2 animate-highlight-pulse">
+    <Card className="border-dashed border-2 border-gray-200 dark:border-gray-600 hover:border-primary/50 bg-white dark:bg-gray-800 transition-colors">
       <CardContent className="p-4">
         <div
           className={cn(
@@ -133,20 +133,20 @@ export function JDUpload() {
             {isUploading ? (
               <>
                 <Spinner className="mb-3" />
-                <p className="text-sm text-gray-600">{statusMessage}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-300">{statusMessage}</p>
               </>
             ) : (
               <>
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mb-3 transition-transform hover:scale-105">
                   <FileText className="h-6 w-6" />
                 </div>
-                <p className="text-sm font-medium text-gray-700">
+                <p className="text-sm font-medium text-gray-700 dark:text-gray-200">
                   Upload job description
                 </p>
-                <p className="text-xs text-gray-500 mt-1">
+                <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
                   PDF, Word, or text file
                 </p>
-                <p className="text-[10px] text-gray-400 mt-2">
+                <p className="text-[10px] text-gray-400 dark:text-gray-500 mt-2">
                   Drag and drop or click to select
                 </p>
                 <Button

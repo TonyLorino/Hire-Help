@@ -13,9 +13,9 @@ export function CandidateSelector() {
   if (candidates.length === 0) return null;
 
   return (
-    <div className="px-4 py-2 border-t border-gray-100 bg-gray-50/50">
+    <div className="px-4 py-2 border-t border-gray-100 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50">
       <div className="flex items-center gap-2 overflow-x-auto pb-1">
-        <span className="text-xs text-gray-500 flex-shrink-0">
+        <span className="text-xs text-gray-500 dark:text-gray-400 flex-shrink-0">
           Focus on:
         </span>
         <Button

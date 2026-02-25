@@ -47,7 +47,7 @@ export function ResumeList() {
   return (
     <div className="space-y-3 w-full min-w-0">
       <div className="flex items-center justify-between">
-        <span className="text-sm text-gray-500">
+        <span className="text-sm text-gray-500 dark:text-gray-400">
           {candidates.length} candidate{candidates.length !== 1 ? "s" : ""}
         </span>
         <div className="flex gap-2">
@@ -69,7 +69,7 @@ export function ResumeList() {
             variant="ghost"
             size="sm"
             onClick={clearCandidates}
-            className="text-xs text-gray-400 hover:text-danger"
+            className="text-xs text-gray-400 dark:text-gray-500 hover:text-danger"
           >
             Clear All
           </Button>
@@ -85,14 +85,14 @@ export function ResumeList() {
                   <FileText className="h-4 w-4" />
                 </div>
                 <div className="min-w-0">
-                  <p className="font-medium text-sm text-gray-900 truncate">
+                  <p className="font-medium text-sm text-gray-900 dark:text-gray-100 truncate">
                     {candidate.name}
                   </p>
-                  <div className="flex items-center gap-1 text-xs text-gray-500">
+                  <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                     <MapPin className="h-3 w-3" />
                     <span className="truncate">{candidate.location}</span>
                   </div>
-                  <p className="text-xs text-gray-400 mt-0.5 truncate">
+                  <p className="text-xs text-gray-400 dark:text-gray-500 mt-0.5 truncate">
                     {candidate.fileName}
                   </p>
                 </div>
@@ -101,7 +101,7 @@ export function ResumeList() {
                 variant="ghost"
                 size="icon"
                 onClick={() => removeCandidate(candidate.id)}
-                className="h-8 w-8 text-gray-400 hover:text-danger flex-shrink-0"
+                className="h-8 w-8 text-gray-400 dark:text-gray-500 hover:text-danger flex-shrink-0"
               >
                 <Trash2 className="h-4 w-4" />
               </Button>

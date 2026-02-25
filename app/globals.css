@@ -26,8 +26,34 @@
     --radius: 12px;
   }
 
+  .dark {
+    --background: 0 0% 11%;
+    --foreground: 0 0% 90%;
+    --card: 0 0% 14%;
+    --card-foreground: 0 0% 90%;
+    --popover: 0 0% 14%;
+    --popover-foreground: 0 0% 90%;
+    --primary: 211 100% 55%;
+    --primary-foreground: 0 0% 100%;
+    --secondary: 0 0% 18%;
+    --secondary-foreground: 0 0% 85%;
+    --muted: 0 0% 18%;
+    --muted-foreground: 0 0% 60%;
+    --accent: 0 0% 18%;
+    --accent-foreground: 0 0% 90%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+    --border: 0 0% 22%;
+    --input: 0 0% 18%;
+    --ring: 211 100% 55%;
+  }
+
   * {
     border-color: #e5e7eb;
+  }
+
+  .dark * {
+    border-color: #374151;
   }
 
   body {
@@ -35,6 +61,10 @@
     font-feature-settings: "kern" 1, "liga" 1, "calt" 1;
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark body {
+    @apply bg-gray-900 text-gray-100;
   }
 }
 
@@ -79,9 +109,21 @@
   background: #9ca3af;
 }
 
+.dark ::-webkit-scrollbar-thumb {
+  background: #4b5563;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #6b7280;
+}
+
 /* Selection styles */
 ::selection {
   background: rgba(0, 122, 255, 0.2);
+}
+
+.dark ::selection {
+  background: rgba(0, 122, 255, 0.4);
 }
 
 /* Smooth transitions for interactive elements */
@@ -242,6 +284,16 @@ button, a, input, textarea, select {
   animation: shimmer 1.5s infinite;
 }
 
+.dark .animate-shimmer {
+  background: linear-gradient(
+    90deg,
+    #374151 25%,
+    #4b5563 50%,
+    #374151 75%
+  );
+  background-size: 200% 100%;
+}
+
 .animate-pulse-border {
   animation: pulse-border 2s ease-in-out infinite;
 }
@@ -265,6 +317,22 @@ button, a, input, textarea, select {
 
 .animate-subtle-bounce {
   animation: subtle-bounce 2s ease-in-out infinite;
+}
+
+/* Overlay chat animations */
+@keyframes overlay-fade-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.animate-overlay-in {
+  animation: overlay-fade-in 200ms ease-out;
 }
 
 /* Staggered animation delays */

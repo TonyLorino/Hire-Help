@@ -1,101 +1,104 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { GripHorizontal } from "lucide-react";
 import { Header } from "@/components/layout/Header";
-import { LeftPanel } from "@/components/layout/LeftPanel";
-import { RightPanel } from "@/components/layout/RightPanel";
-import { ChatInterface } from "@/components/chat/ChatInterface";
-
-// Minimum height to ensure input is always visible (input ~100px + candidate selector ~50px + buffer)
-const MIN_CHAT_HEIGHT = 220;
-const MAX_CHAT_HEIGHT_PERCENT = 0.6;
+import { Sidebar } from "@/components/layout/Sidebar";
+import { SetupPage } from "@/components/pages/SetupPage";
+import { AnalysisPage } from "@/components/pages/AnalysisPage";
+import { InterviewPrepView } from "@/components/interview/InterviewPrepView";
+import { RecommendationsView } from "@/components/recommendations/RecommendationsView";
+import { OverlayChatBox } from "@/components/chat/OverlayChatBox";
+import { useAppStore } from "@/store/app-store";
 
 export default function Home() {
-  const [chatHeight, setChatHeight] = useState(300);
-  const [isDragging, setIsDragging] = useState(false);
-  const dragStartY = useRef(0);
-  const dragStartHeight = useRef(0);
-  const containerRef = useRef<HTMLDivElement>(null);
+  const activeTab = useAppStore((state) => state.activeTab);
+  const setActiveTab = useAppStore((state) => state.setActiveTab);
+  const candidates = useAppStore((state) => state.candidates);
+  const analysisResults = useAppStore((state) => state.analysisResults);
 
-  // Initialize chat height to 35% of viewport on mount
-  useEffect(() => {
-    const maxH = window.innerHeight * MAX_CHAT_HEIGHT_PERCENT;
-    const targetH = window.innerHeight * 0.35;
-    setChatHeight(Math.max(MIN_CHAT_HEIGHT, Math.min(targetH, maxH)));
-  }, []);
+  const hasCandidates = candidates.length > 0;
+  const hasAnalysis = !!analysisResults;
 
-  const handleDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    setIsDragging(true);
-    dragStartY.current = e.clientY;
-    dragStartHeight.current = chatHeight;
-  }, [chatHeight]);
-
-  useEffect(() => {
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!isDragging) return;
-      const delta = dragStartY.current - e.clientY;
-      const maxHeight = window.innerHeight * MAX_CHAT_HEIGHT_PERCENT;
-      const newHeight = Math.min(Math.max(dragStartHeight.current + delta, MIN_CHAT_HEIGHT), maxHeight);
-      setChatHeight(newHeight);
-    };
-
-    const handleMouseUp = () => {
-      setIsDragging(false);
-    };
-
-    if (isDragging) {
-      document.addEventListener("mousemove", handleMouseMove);
-      document.addEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "ns-resize";
-      document.body.style.userSelect = "none";
+  const renderContent = () => {
+    switch (activeTab) {
+      case "setup":
+        return <SetupPage />;
+      case "summary":
+      case "jd-match":
+      case "comparison":
+        return hasAnalysis ? (
+          <div className="h-full overflow-y-auto pb-24">
+            <AnalysisPage />
+          </div>
+        ) : (
+          <EmptyTabState message="Upload candidates to view analysis" />
+        );
+      case "interview":
+        return hasAnalysis ? (
+          <div className="h-full overflow-y-auto pb-24">
+            <InterviewPrepView />
+          </div>
+        ) : (
+          <EmptyTabState message="Analysis required for interview prep" />
+        );
+      case "recommendations":
+        return hasAnalysis ? (
+          <div className="h-full overflow-y-auto pb-24">
+            <RecommendationsView />
+          </div>
+        ) : (
+          <EmptyTabState message="Analysis required for recommendations" />
+        );
+      default:
+        return <SetupPage />;
     }
-
-    return () => {
-      document.removeEventListener("mousemove", handleMouseMove);
-      document.removeEventListener("mouseup", handleMouseUp);
-      document.body.style.cursor = "";
-      document.body.style.userSelect = "";
-    };
-  }, [isDragging]);
+  };
 
   return (
-    <div className="flex flex-col h-screen overflow-hidden" ref={containerRef}>
+    <div className="flex flex-col h-screen overflow-hidden">
       {/* Header */}
       <Header />
 
-      {/* Main Content */}
+      {/* Main Content with Sidebar */}
       <div className="flex flex-1 overflow-hidden">
-        {/* Left Panel - Job Description & Resumes */}
-        <div className="w-[380px] min-w-[380px] max-w-[380px] flex-shrink-0 overflow-clip relative isolate">
-          <LeftPanel />
+        {/* Sidebar Navigation */}
+        <Sidebar
+          activeTab={activeTab}
+          onTabChange={setActiveTab}
+          hasCandidates={hasCandidates}
+          hasAnalysis={hasAnalysis}
+        />
+
+        {/* Main Content Area */}
+        <main className="flex-1 overflow-hidden bg-gray-50/30">
+          {renderContent()}
+        </main>
+      </div>
+
+      {/* Floating Chat Overlay */}
+      <OverlayChatBox />
+    </div>
+  );
+}
+
+function EmptyTabState({ message }: { message: string }) {
+  const setActiveTab = useAppStore((state) => state.setActiveTab);
+
+  return (
+    <div className="flex h-full items-center justify-center">
+      <div className="text-center max-w-md px-4">
+        <div className="flex h-16 w-16 mx-auto items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-4">
+          <svg className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+          </svg>
         </div>
-
-        {/* Right Panel - Analysis */}
-        <div className="flex-1 flex flex-col overflow-hidden">
-          <div className="flex-1 overflow-hidden">
-            <RightPanel />
-          </div>
-
-          {/* Chat Frame Resize Handle */}
-          <div
-            className={`flex items-center justify-center h-2 cursor-ns-resize bg-gray-100 hover:bg-gray-200 transition-colors border-t border-gray-200 ${
-              isDragging ? "bg-gray-200" : ""
-            }`}
-            onMouseDown={handleDragStart}
-          >
-            <GripHorizontal className="h-3 w-3 text-gray-400" />
-          </div>
-
-          {/* Chat Interface */}
-          <div
-            className="flex-shrink-0 overflow-hidden"
-            style={{ height: `${chatHeight}px`, minHeight: `${MIN_CHAT_HEIGHT}px` }}
-          >
-            <ChatInterface />
-          </div>
-        </div>
+        <h3 className="text-lg font-medium text-gray-900 mb-2">Not Available Yet</h3>
+        <p className="text-sm text-gray-500 mb-4">{message}</p>
+        <button
+          onClick={() => setActiveTab("setup")}
+          className="text-sm text-primary hover:text-primary/80 font-medium"
+        >
+          Go to Setup →
+        </button>
       </div>
     </div>
   );

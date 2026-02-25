@@ -72,7 +72,7 @@ export function AnimatedCard({
     <div
       ref={containerRef}
       className={cn(
-        "relative rounded-apple bg-white",
+        "relative rounded-apple bg-white dark:bg-gray-800",
         className
       )}
     >
@@ -138,22 +138,22 @@ export function AnimatedCardSkeleton({
   return (
     <div
       className={cn(
-        "relative rounded-apple bg-gray-50 border-2 border-gray-200 animate-pulse",
+        "relative rounded-apple bg-gray-50 dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700 animate-pulse",
         className
       )}
     >
       <div className="p-5 space-y-3">
         <div className="flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gray-200" />
+          <div className="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700" />
           <div className="space-y-2">
-            <div className="h-4 w-32 bg-gray-200 rounded" />
-            <div className="h-3 w-24 bg-gray-200 rounded" />
+            <div className="h-4 w-32 bg-gray-200 dark:bg-gray-700 rounded" />
+            <div className="h-3 w-24 bg-gray-200 dark:bg-gray-700 rounded" />
           </div>
         </div>
         <div className="space-y-2">
-          <div className="h-3 w-full bg-gray-200 rounded" />
-          <div className="h-3 w-full bg-gray-200 rounded" />
-          <div className="h-3 w-3/4 bg-gray-200 rounded" />
+          <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-3 w-full bg-gray-200 dark:bg-gray-700 rounded" />
+          <div className="h-3 w-3/4 bg-gray-200 dark:bg-gray-700 rounded" />
         </div>
       </div>
     </div>

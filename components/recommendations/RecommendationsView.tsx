@@ -18,9 +18,9 @@ const decisionLabels: Record<InterviewDecision, string> = {
 };
 
 const decisionColors: Record<InterviewDecision, string> = {
-  advance: "bg-success-light text-success border-success/20",
-  hold: "bg-warning-light text-warning border-warning/20",
-  reject: "bg-danger-light text-danger border-danger/20",
+  advance: "bg-success-light dark:bg-green-900/30 text-success dark:text-green-400 border-success/20 dark:border-green-700",
+  hold: "bg-warning-light dark:bg-yellow-900/30 text-warning dark:text-yellow-400 border-warning/20 dark:border-yellow-700",
+  reject: "bg-danger-light dark:bg-red-900/30 text-danger dark:text-red-400 border-danger/20 dark:border-red-700",
 };
 
 // Helper to render inline markdown (bold/italic) in text
@@ -515,7 +515,7 @@ export function RecommendationsView() {
 
   if (candidates.length === 0) {
     return (
-      <div className="text-center py-12 text-gray-500">
+      <div className="text-center py-12 text-gray-500 dark:text-gray-400">
         Upload candidates to view recommendations
       </div>
     );
@@ -524,30 +524,30 @@ export function RecommendationsView() {
   if (!hasAnalyzedNotes) {
     return (
       <div className="flex flex-col items-center justify-center py-12 text-center">
-        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 text-gray-400 mb-4">
+        <div className="flex h-16 w-16 items-center justify-center rounded-full bg-gray-100 dark:bg-gray-800 text-gray-400 mb-4">
           <FileText className="h-8 w-8" />
         </div>
-        <h4 className="font-medium text-gray-900 mb-2">
+        <h4 className="font-medium text-gray-900 dark:text-gray-100 mb-2">
           No Interview Notes Analyzed Yet
         </h4>
-        <p className="text-sm text-gray-500 max-w-md mb-6">
+        <p className="text-sm text-gray-500 dark:text-gray-400 max-w-md mb-6">
           Add interview notes for candidates and analyze them to see comprehensive recommendations.
         </p>
-        <Button onClick={() => setActiveTab("notes")}>
+        <Button onClick={() => setActiveTab("interview")}>
           <ArrowRight className="h-4 w-4 mr-2" />
-          Go to Interview Notes
+          Go to Interview Prep
         </Button>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="p-6 space-y-6">
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-1">
-          Candidate Recommendations
-        </h3>
-        <p className="text-sm text-gray-500">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+          Post-Interview Recommendations
+        </h2>
+        <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
           Comprehensive analysis based on resumes, JD matching, and interview notes
         </p>
       </div>
@@ -659,10 +659,10 @@ export function RecommendationsView() {
                 <CardContent className="p-5">
                   {/* Synopsis with typewriter */}
                   <div className="mb-4">
-                    <h5 className="text-sm font-medium text-gray-700 mb-2">
+                    <h5 className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                       Interview Synopsis
                     </h5>
-                    <div className="text-sm text-gray-600 leading-relaxed">
+                    <div className="text-sm text-gray-600 dark:text-gray-300 leading-relaxed">
                       {analysis.synopsis ? (
                         <TypewriterParagraph
                           text={analysis.synopsis}
@@ -679,10 +679,10 @@ export function RecommendationsView() {
                   {/* Matches and Gaps Grid */}
                   <div className="grid gap-4 md:grid-cols-2 mb-4">
                     {/* Strengths */}
-                    <div className={`p-4 bg-success-light/50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 300}ms` }}>
+                    <div className={`p-4 bg-success-light/50 dark:bg-green-900/20 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 300}ms` }}>
                       <div className="flex items-center gap-2 mb-3">
-                        <CheckCircle2 className="h-4 w-4 text-success" />
-                        <span className="text-sm font-medium text-success">
+                        <CheckCircle2 className="h-4 w-4 text-success dark:text-green-400" />
+                        <span className="text-sm font-medium text-success dark:text-green-400">
                           Strengths & Matches
                         </span>
                       </div>
@@ -692,17 +692,17 @@ export function RecommendationsView() {
                         staggerDelay={150}
                         initialDelay={skipAnimation ? 0 : cardIndex * 150 + 800}
                         className="space-y-1.5"
-                        itemClassName="text-xs text-gray-600"
-                        renderBullet={() => <span className="text-success mt-0.5">•</span>}
+                        itemClassName="text-xs text-gray-600 dark:text-gray-300"
+                        renderBullet={() => <span className="text-success dark:text-green-400 mt-0.5">•</span>}
                         skipAnimation={skipAnimation}
                       />
                     </div>
 
                     {/* Concerns */}
-                    <div className={`p-4 bg-danger-light/50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 400}ms` }}>
+                    <div className={`p-4 bg-danger-light/50 dark:bg-red-900/20 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 400}ms` }}>
                       <div className="flex items-center gap-2 mb-3">
-                        <XCircle className="h-4 w-4 text-danger" />
-                        <span className="text-sm font-medium text-danger">
+                        <XCircle className="h-4 w-4 text-danger dark:text-red-400" />
+                        <span className="text-sm font-medium text-danger dark:text-red-400">
                           Concerns & Gaps
                         </span>
                       </div>
@@ -712,8 +712,8 @@ export function RecommendationsView() {
                         staggerDelay={150}
                         initialDelay={skipAnimation ? 0 : cardIndex * 150 + 1000}
                         className="space-y-1.5"
-                        itemClassName="text-xs text-gray-600"
-                        renderBullet={() => <span className="text-danger mt-0.5">•</span>}
+                        itemClassName="text-xs text-gray-600 dark:text-gray-300"
+                        renderBullet={() => <span className="text-danger dark:text-red-400 mt-0.5">•</span>}
                         skipAnimation={skipAnimation}
                       />
                     </div>
@@ -721,8 +721,8 @@ export function RecommendationsView() {
 
                   {/* Next Steps */}
                   {analysis.nextSteps && analysis.nextSteps.length > 0 && (
-                    <div className={`p-3 bg-gray-50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 500}ms` }}>
-                      <h5 className="text-xs font-medium text-gray-500 uppercase tracking-wider mb-2">
+                    <div className={`p-3 bg-gray-50 dark:bg-gray-700/50 rounded-apple ${skipAnimation ? '' : 'animate-fade-in-up'}`} style={{ animationDelay: skipAnimation ? "0ms" : `${cardIndex * 150 + 500}ms` }}>
+                      <h5 className="text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-2">
                         Suggested Next Steps
                       </h5>
                       <TypewriterList
@@ -731,7 +731,7 @@ export function RecommendationsView() {
                         staggerDelay={120}
                         initialDelay={skipAnimation ? 0 : cardIndex * 150 + 1200}
                         className="space-y-1"
-                        itemClassName="text-xs text-gray-600"
+                        itemClassName="text-xs text-gray-600 dark:text-gray-300"
                         renderBullet={() => <ArrowRight className="h-3 w-3 mt-0.5 text-primary flex-shrink-0" />}
                         skipAnimation={skipAnimation}
                       />
@@ -748,7 +748,7 @@ export function RecommendationsView() {
       {sortedCandidates.length > 1 && (
         <div className={`space-y-4 ${skipAnimation ? '' : 'animate-fade-in'}`} style={{ animationDelay: skipAnimation ? "0ms" : "300ms" }}>
           <div className="flex items-center justify-between">
-            <h4 className="text-base font-semibold text-gray-900">
+            <h4 className="text-base font-semibold text-gray-900 dark:text-gray-100">
               Candidate Comparison
             </h4>
             <div className="flex gap-1">
@@ -783,31 +783,31 @@ export function RecommendationsView() {
           </div>
 
           <Card className={`overflow-hidden ${skipAnimation ? '' : 'animate-scale-in'}`} ref={comparisonTableRef} style={{ animationDelay: skipAnimation ? "0ms" : "400ms" }}>
-            <div className="max-h-[calc(100vh-400px)] min-h-[250px] overflow-auto" data-scroll-container>
+            <div className="min-h-[250px]" data-scroll-container>
               <table className="w-full">
-                <thead className="sticky top-0 z-10 bg-gray-50 shadow-[0_1px_0_0_theme(colors.gray.200)]">
-                  <tr className="border-b border-gray-200">
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                <thead className="sticky top-0 z-10 bg-gray-50 dark:bg-gray-900 shadow-[0_1px_0_0_theme(colors.gray.200)] dark:shadow-[0_1px_0_0_theme(colors.gray.700)]">
+                  <tr className="border-b border-gray-200 dark:border-gray-700">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Candidate
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       JD Match
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Summary
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Interview Highlights
                     </th>
-                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Key Concerns
                     </th>
-                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    <th className="px-4 py-3 text-center text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                       Recommendation
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-100">
+                <tbody className="divide-y divide-gray-100 dark:divide-gray-700">
                   {sortedCandidates.map((candidate, rowIndex) => {
                     const analysis = interviewNotesAnalyses.get(candidate.id);
                     const comparison = analysisResults?.comparisons?.find(
@@ -820,16 +820,16 @@ export function RecommendationsView() {
                     return (
                       <tr
                         key={candidate.id}
-                        className={`hover:bg-gray-50 ${skipAnimation ? '' : 'transition-all duration-300'} ${
+                        className={`hover:bg-gray-50 dark:hover:bg-gray-800 ${skipAnimation ? '' : 'transition-all duration-300'} ${
                           isVisible ? "opacity-100 translate-y-0" : "opacity-0 translate-y-2"
                         }`}
                       >
                         <td className="px-4 py-4">
                           <div>
-                            <span className="font-medium text-gray-900">
+                            <span className="font-medium text-gray-900 dark:text-gray-100">
                               {candidate.name}
                             </span>
-                            <div className="flex items-center gap-1 text-xs text-gray-500">
+                            <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-gray-400">
                               <MapPin className="h-3 w-3" />
                               {candidate.location}
                             </div>
@@ -849,7 +849,7 @@ export function RecommendationsView() {
                                     stroke="currentColor"
                                     strokeWidth="3"
                                     fill="none"
-                                    className="text-gray-200"
+                                    className="text-gray-200 dark:text-gray-700"
                                   />
                                   <circle
                                     cx="20"
@@ -863,17 +863,17 @@ export function RecommendationsView() {
                                     style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${rowIndex * 200 + 300}ms` : "0ms") }}
                                   />
                                 </svg>
-                                <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700">
+                                <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-gray-700 dark:text-gray-300">
                                   {comparison.jdMatchPercent}%
                                 </span>
                               </div>
                             </div>
                           ) : (
-                            <span className="text-xs text-gray-400">N/A</span>
+                            <span className="text-xs text-gray-400 dark:text-gray-500">N/A</span>
                           )}
                         </td>
                         <td className="px-4 py-4 max-w-xs">
-                          <p className="text-xs text-gray-600 leading-relaxed">
+                          <p className="text-xs text-gray-600 dark:text-gray-300 leading-relaxed">
                             {analysis.synopsis ? renderInlineMarkdown(truncateToSentences(analysis.synopsis, 2)) : "No summary available."}
                           </p>
                         </td>
@@ -882,12 +882,12 @@ export function RecommendationsView() {
                             {analysis.interviewMatches?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
-                                className={`flex items-start gap-1 text-xs text-gray-600 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
+                                className={`flex items-start gap-1 text-xs text-gray-600 dark:text-gray-300 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
                                   isVisible ? "opacity-100" : "opacity-0"
                                 }`}
                                 style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${i * 50 + 100}ms` : "0ms") }}
                               >
-                                <CheckCircle2 className="h-3 w-3 mt-0.5 text-success flex-shrink-0" />
+                                <CheckCircle2 className="h-3 w-3 mt-0.5 text-success dark:text-green-400 flex-shrink-0" />
                                 <span>{renderInlineMarkdown(item)}</span>
                               </li>
                             ))}
@@ -898,12 +898,12 @@ export function RecommendationsView() {
                             {analysis.interviewGaps?.slice(0, 8).map((item, i) => (
                               <li
                                 key={i}
-                                className={`flex items-start gap-1 text-xs text-gray-600 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
+                                className={`flex items-start gap-1 text-xs text-gray-600 dark:text-gray-300 ${skipAnimation ? '' : 'transition-opacity duration-200'} ${
                                   isVisible ? "opacity-100" : "opacity-0"
                                 }`}
                                 style={{ transitionDelay: skipAnimation ? "0ms" : (isVisible ? `${i * 50 + 100}ms` : "0ms") }}
                               >
-                                <XCircle className="h-3 w-3 mt-0.5 text-danger flex-shrink-0" />
+                                <XCircle className="h-3 w-3 mt-0.5 text-danger dark:text-red-400 flex-shrink-0" />
                                 <span>{renderInlineMarkdown(item)}</span>
                               </li>
                             ))}
@@ -932,11 +932,11 @@ export function RecommendationsView() {
 
       {/* Candidates without analysis */}
       {candidates.length > analyzedCandidates.length && (
-        <div className="p-4 bg-gray-50 rounded-apple">
-          <p className="text-sm text-gray-500">
+        <div className="p-4 bg-gray-50 dark:bg-gray-800 rounded-apple">
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {candidates.length - analyzedCandidates.length} candidate(s) have not been analyzed yet.{" "}
             <button
-              onClick={() => setActiveTab("notes")}
+              onClick={() => setActiveTab("interview")}
               className="text-primary hover:underline"
             >
               Add interview notes

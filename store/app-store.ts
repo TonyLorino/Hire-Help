@@ -45,6 +45,7 @@ interface AppStore extends AppState {
   // UI Actions
   setLoading: (loading: boolean, message?: string) => void;
   setActiveTab: (tab: ActiveTab) => void;
+  setSidebarExpanded: (expanded: boolean) => void;
 
   // Reset
   resetAll: () => void;
@@ -65,7 +66,8 @@ const initialState: AppState = {
   selectedCandidateId: null,
   isLoading: false,
   loadingMessage: "",
-  activeTab: "summary",
+  activeTab: "setup",
+  sidebarExpanded: true,
 };
 
 // Track which items have already been animated (outside of Zustand for performance)
@@ -201,6 +203,8 @@ export const useAppStore = create<AppStore>((set, get) => ({
     set({ isLoading: loading, loadingMessage: message }),
 
   setActiveTab: (tab) => set({ activeTab: tab }),
+
+  setSidebarExpanded: (expanded) => set({ sidebarExpanded: expanded }),
 
   // Reset
   resetAll: () => {

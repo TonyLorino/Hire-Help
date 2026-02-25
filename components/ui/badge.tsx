@@ -7,17 +7,17 @@ const badgeVariants = cva(
   {
     variants: {
       variant: {
-        default: "bg-gray-100 text-gray-700",
-        best: "bg-success-light text-success",
-        better: "bg-primary-50 text-primary",
-        good: "bg-warning-light text-warning",
-        bad: "bg-danger-light text-danger",
-        concentrate: "bg-success-light text-success",
-        consider: "bg-warning-light text-warning",
-        eliminate: "bg-danger-light text-danger",
-        advance: "bg-success-light text-success",
-        hold: "bg-warning-light text-warning",
-        reject: "bg-danger-light text-danger",
+        default: "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300",
+        best: "bg-success-light dark:bg-green-900/40 text-success dark:text-green-400",
+        better: "bg-primary-50 dark:bg-primary/20 text-primary",
+        good: "bg-warning-light dark:bg-yellow-900/40 text-warning dark:text-yellow-400",
+        bad: "bg-danger-light dark:bg-red-900/40 text-danger dark:text-red-400",
+        concentrate: "bg-success-light dark:bg-green-900/40 text-success dark:text-green-400",
+        consider: "bg-warning-light dark:bg-yellow-900/40 text-warning dark:text-yellow-400",
+        eliminate: "bg-danger-light dark:bg-red-900/40 text-danger dark:text-red-400",
+        advance: "bg-success-light dark:bg-green-900/40 text-success dark:text-green-400",
+        hold: "bg-warning-light dark:bg-yellow-900/40 text-warning dark:text-yellow-400",
+        reject: "bg-danger-light dark:bg-red-900/40 text-danger dark:text-red-400",
       },
     },
     defaultVariants: {
