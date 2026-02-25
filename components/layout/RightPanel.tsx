@@ -6,7 +6,6 @@ import { CandidateSummary } from "@/components/analysis/CandidateSummary";
 import { JDMatchTable } from "@/components/analysis/JDMatchTable";
 import { CandidateCompareTable } from "@/components/analysis/CandidateCompareTable";
 import { InterviewPrepView } from "@/components/interview/InterviewPrepView";
-import { InterviewNotesView } from "@/components/interview/InterviewNotesView";
 import { RecommendationsView } from "@/components/recommendations/RecommendationsView";
 import { JDAnalysisCard } from "@/components/job-description/JDAnalysisCard";
 import { EmptyState } from "@/components/layout/EmptyState";
@@ -169,7 +168,6 @@ export function RightPanel() {
             )
           )}
           {activeTab === "interview" && <InterviewPrepView />}
-          {activeTab === "notes" && <InterviewNotesView />}
           {activeTab === "recommendations" && <RecommendationsView />}
         </div>
       </div>
